@@ -1,8 +1,7 @@
 pragma solidity ^0.4.22;
 
-import "../tokens/StdDaoToken.sol";
-
-import "../IDaoBase.sol";
+import "@thetta/core/contracts/tokens/StdDaoToken.sol";
+import "@thetta/core/contracts/IDaoBase.sol";
 
 // This is an example of a more fine grained permissions.
 // DaoBase allows us to permit 'issueTokens'/'burnTokens' only for all tokens at once. 

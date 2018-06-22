@@ -6,13 +6,13 @@ var DaoBaseWithUnpackers = artifacts.require("./DaoBaseWithUnpackers");
 var DaoBase = artifacts.require("./DaoBase");
 var DaoBaseAuto = artifacts.require("./DaoBaseAuto");
 
-var MoneyFlow = artifacts.require("./MoneyFlow");
-var MoneyflowAuto = artifacts.require("./MoneyflowAuto");
+//var MoneyFlow = artifacts.require("./MoneyFlow");
+//var MoneyflowAuto = artifacts.require("./MoneyflowAuto");
 
 // DAO factories
 var HierarchyDaoFactory = artifacts.require("./HierarchyDaoFactory"); 
 
-var CheckExceptions = require('../utils/checkexceptions');
+var CheckExceptions = require('./utils/checkexceptions');
 
 function KECCAK256 (x){
 	return web3.sha3(x);

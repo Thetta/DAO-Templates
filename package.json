@@ -1,12 +1,10 @@
 {
   "name": "@thetta/templates",
-  "version": "0.1",
+  "version": "1.0.0",
   "description": "Thetta Decentralized Autonomous Organizations templates",
   "main": "truffle.js",
   "scripts": {
-    "coverage": "scripts/coverage.sh",
-    "test": "scripts/test.sh",
-    "coverage2": "./node_modules/.bin/solidity-coverage"
+    "test": "scripts/test.sh"
   },
   "repository": {
     "type": "git",

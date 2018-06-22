@@ -1,10 +1,9 @@
 pragma solidity ^0.4.22;
 
-import '../DaoBase.sol';
-import '../tokens/StdDaoToken.sol';
-
-import '../DaoBaseAuto.sol';
-import '../moneyflow/MoneyflowAuto.sol';
+import "@thetta/core/contracts/DaoBase.sol";
+import "@thetta/core/contracts/DaoBaseAuto.sol";
+import "@thetta/core/contracts/tokens/StdDaoToken.sol";
+import "@thetta/core/contracts/moneyflow/MoneyflowAuto.sol";
 
 contract HierarchyDao is DaoBaseWithUnpackers {
 	constructor(DaoStorage _store)public DaoBaseWithUnpackers(_store){
