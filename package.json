@@ -1,0 +1,31 @@
+{
+  "name": "@thetta/templates",
+  "version": "0.1",
+  "description": "Thetta Decentralized Autonomous Organizations templates",
+  "main": "truffle.js",
+  "scripts": {
+    "coverage": "scripts/coverage.sh",
+    "test": "scripts/test.sh",
+    "coverage2": "./node_modules/.bin/solidity-coverage"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Thetta/Thetta-Templates.git"
+  },
+  "author": "Thetta Community <community@thetta.io>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Thetta/Thetta-Templates/projects/1"
+  },
+  "homepage": "https://web.thetta.io",
+  "dependencies": {
+    "babel-eslint": "^8.2.3",
+    "babel-polyfill": "^6.26.0",
+    "babel-register": "^6.26.0",
+    "ethereumjs-testrpc": "^6.0.3",
+    "growl": "^1.10.0",
+    "solidity-coverage": "^0.4.15",
+    "truffle": "^4.1.8",
+    "zeppelin-solidity": "^1.9.0"
+  }
+}
