@@ -1,119 +1,87 @@
-pragma solidity ^0.4.22;
+pragma solidity ^0.4.24;
 
 import "@thetta/core/contracts/DaoBase.sol";
 import "@thetta/core/contracts/DaoBaseAuto.sol";
 import "@thetta/core/contracts/tokens/StdDaoToken.sol";
-import "@thetta/core/contracts/moneyflow/MoneyflowAuto.sol";
 
-contract HierarchyDao is DaoBaseWithUnpackers {
-	constructor(DaoStorage _store)public DaoBaseWithUnpackers(_store){
+contract HierarchyDao {
 
-	}
-}
-
-contract HierarchyDaoFactory {
-	StdDaoToken token;
+	StdDaoToken public token;
 	DaoStorage store;
 
-	HierarchyDao public dao;
+	DaoBaseWithUnpackers public dao;
 	DaoBaseAuto public aac;
 
 	address[] tokens;
 
-	constructor(address _boss, address[] _managers, address[] _employees)public{
-		createDao(_boss, _managers, _employees);
-
-		setupAac();
+	constructor(
+        address _boss, 
+        address _manager, 
+        address _employee, 
+        address _outsiderWithTokens, 
+        address _outsiderWithoutTokens
+    ) public {
+		createDao(_boss, _manager, _employee, _outsiderWithTokens, _outsiderWithoutTokens);
+        setupAac();
 	}
+    
+	function createDao(
+        address _boss, 
+        address _manager, 
+        address _employee, 
+        address _outsiderWithTokens, 
+        address _outsiderWithoutTokens
+    ) internal returns(address) {
 
-	function createDao(address _boss, address[] _managers, address[] _employees) internal returns(address) {
-		// 1 - create
-	   token = new StdDaoToken("StdToken", "STDT", 18);
+		// create token
+		token = new StdDaoToken("StdToken", "STDT", 18);
 		tokens.push(address(token));
 
+        // send outsider some tokens for testing purposes
+        token.mint(_outsiderWithTokens, 1);
+		
+        // create dao
 		store = new DaoStorage(tokens);
-		dao = new HierarchyDao(store);
+		dao = new DaoBaseWithUnpackers(store);
 
-		store.allowActionByAddress(keccak256("manageGroups"),this);
+		store.allowActionByAddress(keccak256("manageGroups"), address(this));
 
 		token.transferOwnership(dao);
 		store.transferOwnership(dao);
 
-		// 2 - setup
-		setPermissions(_boss, _managers, _employees);
+		// set permissions
+		setPermissions(_boss, _manager, _employee);
 
-		// 3 - return 
+		// return dao address
 		dao.transferOwnership(msg.sender);
 		return dao;
 	}
 
-	function setPermissions(address _boss, address[] _managers, address[] _employees) internal {
-		// 1 - grant all permissions to the _boss (i.e. "the monarch")
+	function setPermissions(address _boss, address _manager, address _employee) internal {
+
 		dao.addGroupMember("Managers", _boss);
 		dao.addGroupMember("Employees", _boss);
+        dao.addGroupMember("Managers", _manager);
+        dao.addGroupMember("Employees", _employee);
 
-		dao.allowActionByAddress("modifyMoneyscheme",_boss);
-		dao.allowActionByAddress("issueTokens", _boss);
-		dao.allowActionByAddress("upgradeDaoContract", _boss);
-		dao.allowActionByAddress("withdrawDonations", _boss);
-		dao.allowActionByAddress("flushReserveFundTo", _boss);
-		dao.allowActionByAddress("flushDividendsFundTo", _boss);
+        dao.allowActionByAddress("issueTokens", _boss); 
+        dao.allowActionByAnyMemberOfGroup("addNewProposal", "Managers");
 
-		// 2 - set Managers group permissions
-		dao.allowActionByAnyMemberOfGroup("addNewProposal","Managers");
-		dao.allowActionByAnyMemberOfGroup("addNewTask","Managers");
-		dao.allowActionByAnyMemberOfGroup("startTask","Managers");
-		dao.allowActionByAnyMemberOfGroup("startBounty","Managers");
-
-		// 3 - set Employees group permissions 
-		dao.allowActionByAnyMemberOfGroup("startTask","Employees");
-		dao.allowActionByAnyMemberOfGroup("startBounty","Employees");
-
-		// 4 - the rest is by voting only (requires addNewProposal permission)
-		// so accessable by Managers only even with voting
-		dao.allowActionByVoting("manageGroups", token);
-		dao.allowActionByVoting("modifyMoneyscheme", token);
-
-		// 5 - populate groups
-		uint i = 0;
-		for(i=0; i<_managers.length; ++i){
-			dao.addGroupMember("Managers", _managers[i]);
-		}
-
-		for(i=0; i<_employees.length; ++i){
-			dao.addGroupMember("Employees", _employees[i]);
-		}
+        dao.allowActionByVoting("manageGroups", token);
 	}
 
-	function setupAac() internal {
-		aac = new DaoBaseAuto(IDaoBase(dao));
+    function setupAac() internal {
 
-		uint VOTING_TYPE_1P1V = 1;
-		aac.setVotingParams("manageGroups", VOTING_TYPE_1P1V, bytes32(0), "Managers", bytes32(50), bytes32(50), 0);
+        aac = new DaoBaseAuto(dao);
 
-		dao.allowActionByAddress("addNewProposal", aac);
-		dao.allowActionByAddress("manageGroups", aac);
-		//dao.allowActionByAddress("issueTokens", aac);
-		//dao.allowActionByAddress("upgradeDaoContract", aac);
+        // set voring params 1 person 1 vote
+        uint8 VOTING_TYPE_1P1V = 1;
+        aac.setVotingParams("manageGroups", VOTING_TYPE_1P1V, bytes32(0), "Managers", bytes32(50), bytes32(50), 0);
 
-		aac.transferOwnership(msg.sender);
-	}
+        dao.allowActionByAddress("addNewProposal", aac);
+        dao.allowActionByAddress("manageGroups", aac);
 
-	// WARNING:
-	// Unfortunately creating MoneyflowAuto here caused some weird bug 
-	// with OutOfGas...That's why i moved DaoBaseAuto creation outside of this contract
-	function setupAmac(MoneyflowAuto _amac) public {
-		uint VOTING_TYPE_1P1V = 1;
-		_amac.setVotingParams("modifyMoneyscheme", VOTING_TYPE_1P1V, bytes32(0), "Managers", bytes32(50), bytes32(50), 0);
-
-		dao.allowActionByAddress("addNewProposal", _amac);
-		dao.allowActionByAddress("modifyMoneyscheme", _amac);
-
-		dao.allowActionByAddress("addNewTask", _amac);
-		dao.allowActionByAddress("setRootWeiReceiver", _amac);
-		dao.allowActionByAddress("withdrawDonations", _amac);
-
-		_amac.transferOwnership(msg.sender);
-	}
+        aac.transferOwnership(msg.sender);
+    }
+    
 }
-
