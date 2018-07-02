@@ -4,27 +4,29 @@
   "description": "Thetta Decentralized Autonomous Organizations templates",
   "main": "truffle.js",
   "scripts": {
-    "test": "scripts/test.sh"
+	"test": "scripts/test.sh"
   },
   "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Thetta/Thetta-Templates.git"
+	"type": "git",
+	"url": "git+https://github.com/Thetta/Thetta-Templates.git"
   },
   "author": "Thetta Community <community@thetta.io>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Thetta/Thetta-Templates/projects/1"
+	"url": "https://github.com/Thetta/Thetta-Templates/projects/1"
   },
   "homepage": "https://web.thetta.io",
   "dependencies": {
-    "@thetta/core": "^1.2.0",
-    "babel-eslint": "^8.2.3",
-    "babel-polyfill": "^6.26.0",
-    "babel-register": "^6.26.0",
-    "ethereumjs-testrpc": "^6.0.3",
-    "growl": "^1.10.0",
-    "solidity-coverage": "^0.4.15",
-    "truffle": "^4.1.8",
-    "zeppelin-solidity": "^1.9.0"
+	"@thetta/core": "^1.2.0",
+	"babel-eslint": "^8.2.3",
+	"babel-polyfill": "^6.26.0",
+	"babel-register": "^6.26.0",
+	"chai": "^4.1.2",
+	"chai-as-promised": "^7.1.1",
+	"ganache-cli": "^6.1.4",
+	"growl": "^1.10.0",
+	"solidity-coverage": "^0.4.15",
+	"truffle": "^4.1.8",
+	"zeppelin-solidity": "^1.9.0"
   }
 }
