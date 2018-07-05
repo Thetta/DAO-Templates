@@ -54,6 +54,8 @@ contract DevZenDao is DaoBaseWithUnpackers {
 
 		string[] adSlots;
 		uint usedSlots;
+
+		uint createdAt;
 	}
 
 	StdDaoToken public devZenToken;
@@ -128,7 +130,8 @@ contract DevZenDao is DaoBaseWithUnpackers {
 	 * Notice: DevZen_moveToNextExpisode is a custom action!
 	*/
 	function moveToNextEpisode() isCanDo("DevZen_moveToNextEpisode") public {
-		// 1 - check if 1 week is passed
+		
+		// 1 - check if 1 week has passed
 		require(isOneWeekPassed());
 
 		// 2 - mint tokens 
@@ -143,6 +146,7 @@ contract DevZenDao is DaoBaseWithUnpackers {
 		nextEpisode.nextShowHost = 0x0;
 		nextEpisode.nextShowGuest = 0x0;
 		nextEpisode.usedSlots = 0;
+		nextEpisode.createdAt = now;
 
 		// 4 - mint some reputation tokens to the Guest 
 		repToken.mint(nextEpisode.prevShowGuest, params.repTokensReward_Guest);
@@ -209,10 +213,17 @@ contract DevZenDao is DaoBaseWithUnpackers {
 
 		// 3 - if ok -> transfer tokens to the msg.sender!
 	}
-//
-	function isOneWeekPassed() public constant returns(bool){
-		// TODO: 
-		return false;
+
+	/**
+	 * @dev Check that 1 week has passed since the last episode
+	 * @return true if 1 week has passed else false
+	 */
+	function isOneWeekPassed() public view returns(bool) {
+
+		// return true is this is the 1st episode
+		if(nextEpisode.createdAt == 0) return true;
+
+		return nextEpisode.createdAt + 7 days <= now;
 	}
 
 	// do not allow to send ETH here. Instead use buyTokens method
@@ -233,12 +244,14 @@ contract DevZenDaoFactory {
 	}
 
 	function createDao(address _boss, address[] _devZenTeam) internal returns(address) {
-	   StdDaoToken devZenToken = new StdDaoToken("DevZenToken", "DZT", 18);
-	   StdDaoToken repToken = new StdDaoToken("DevZenRepToken", "DZTREP", 18);
+
+		StdDaoToken devZenToken = new StdDaoToken("DevZenToken", "DZT", 18);
+		StdDaoToken repToken = new StdDaoToken("DevZenRepToken", "DZTREP", 18);
 
 		address[] tokens;
 		tokens.push(devZenToken);
 		tokens.push(repToken);
+
 		store = new DaoStorage(tokens);
 
 		// DevZen tokens:
