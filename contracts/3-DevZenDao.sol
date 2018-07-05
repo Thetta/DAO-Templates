@@ -204,14 +204,21 @@ contract DevZenDao is DaoBaseWithUnpackers {
 
 // These methods should be called by any address:
 
-   // Any listener can get a ERC20 “devzen” tokens by sending X ETHers to the DevZen DAO and becomes a “patron” (i.e. token holder).
-	function buyTokens() public payable {
-		// TODO:
-		// 1 - check the msg.value and calculate how many tokens msg.sender wants to buy (use oneTokenPriceInWei)
+   /**
+	* @dev Any listener can get a ERC20 “devzen” tokens by sending X ETHers to the DevZen DAO and becomes a “patron” (i.e. token holder).
+    */
+	function buyTokens() external payable {
 
-		// 2 - check if this address holds enough tokens 
+		require(msg.value != 0);
+		
+		// 1 - calculate how many tokens msg.sender wants to buy (use oneTokenPriceInWei)
+		uint tokensToPurchase = (msg.value / params.oneTokenPriceInWei) * 10**18;
 
-		// 3 - if ok -> transfer tokens to the msg.sender!
+		// 2 - check if this address holds enough tokens
+		require(devZenToken.balanceOf(address(this)) >= tokensToPurchase);
+
+		// 3 - if ok -> transfer tokens to the msg.sender
+		devZenToken.transfer(msg.sender, tokensToPurchase);
 	}
 
 	/**
@@ -263,14 +270,14 @@ contract DevZenDaoFactory {
 		// 2 tokens as reputation incentive for 4 moderators
 		// 1 tokens as incentive for 1 guest
 		DevZenDao.Params defaultParams;
-		defaultParams.mintTokensPerWeekAmount = 10 * 10e18;
-		defaultParams.mintReputationTokensPerWeekAmount = 5 * 10e18;
+		defaultParams.mintTokensPerWeekAmount = 10 * 10**18;
+		defaultParams.mintReputationTokensPerWeekAmount = 5 * 10**18;
 		defaultParams.oneAdSlotPrice = 2 * 10e18;
 		// Current ETH price is ~$450. One token will be worth ~$45. One ad will cost ~$90 (2 tokens)
-		defaultParams.oneTokenPriceInWei = 0.1 * 10e18;
-		defaultParams.repTokensReward_Host = 2 * 10e18;
-		defaultParams.repTokensReward_Guest = 1 * 10e18;
-		defaultParams.repTokensReward_TeamMembers = 2 * 10e18;
+		defaultParams.oneTokenPriceInWei = 0.1 * 10**18;
+		defaultParams.repTokensReward_Host = 2 * 10**18;
+		defaultParams.repTokensReward_Guest = 1 * 10**18;
+		defaultParams.repTokensReward_TeamMembers = 2 * 10**18;
 
 		dao = new DevZenDao(devZenToken, repToken, store, defaultParams);
 
