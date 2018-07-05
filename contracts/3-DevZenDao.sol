@@ -229,7 +229,7 @@ contract DevZenDaoFactory {
 
 	constructor(address _boss, address[] _devZenTeam) public{
 		createDao(_boss, _devZenTeam);
-		setupAac();
+		// setupAac();
 	}
 
 	function createDao(address _boss, address[] _devZenTeam) internal returns(address) {
@@ -261,14 +261,15 @@ contract DevZenDaoFactory {
 
 		dao = new DevZenDao(devZenToken, repToken, store, defaultParams);
 
-		store.allowActionByAddress(keccak256("manageGroups"),this);
+		// !!! THIS LINE THROWS
+		// store.allowActionByAddress(keccak256("manageGroups"),this);
 
 		devZenToken.transferOwnership(dao);
 		repToken.transferOwnership(dao);
-		store.transferOwnership(dao);
+		// store.transferOwnership(dao);
 
 		// 2 - setup
-		setPermissions(_devZenTeam);
+		// setPermissions(_devZenTeam);
 
 		// 3 - return 
 		dao.transferOwnership(msg.sender);
