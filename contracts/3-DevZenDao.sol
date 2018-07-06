@@ -129,7 +129,7 @@ contract DevZenDao is DaoBaseWithUnpackers {
 	 * Should be called right AFTER the recording of the current episode
 	 * Notice: DevZen_moveToNextExpisode is a custom action!
 	*/
-	function moveToNextEpisode() isCanDo("DevZen_moveToNextEpisode") public {
+	function moveToNextEpisode() public {
 		
 		// 1 - check if 1 week has passed
 		require(isOneWeekPassed());
@@ -269,7 +269,7 @@ contract DevZenDaoFactory {
 		// 2 tokens as reputation incentive for 1 host   
 		// 2 tokens as reputation incentive for 4 moderators
 		// 1 tokens as incentive for 1 guest
-		DevZenDao.Params defaultParams;
+		DevZenDao.Params memory defaultParams;
 		defaultParams.mintTokensPerWeekAmount = 10 * 10**18;
 		defaultParams.mintReputationTokensPerWeekAmount = 5 * 10**18;
 		defaultParams.oneAdSlotPrice = 2 * 10e18;
