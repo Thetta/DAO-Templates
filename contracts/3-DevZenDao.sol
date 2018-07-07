@@ -233,8 +233,8 @@ contract DevZenDaoFactory {
 	}
 
 	function createDao(address _boss, address[] _devZenTeam) internal returns(address) {
-	   StdDaoToken devZenToken = new StdDaoToken("DevZenToken", "DZT", 18);
-	   StdDaoToken repToken = new StdDaoToken("DevZenRepToken", "DZTREP", 18);
+		StdDaoToken devZenToken = new StdDaoToken("DevZenToken", "DZT", 18);
+		StdDaoToken repToken = new StdDaoToken("DevZenRepToken", "DZTREP", 18);
 
 		address[] tokens;
 		tokens.push(devZenToken);
