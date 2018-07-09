@@ -40,7 +40,7 @@ contract DevZenDaoFactoryTestable {
 		DevZenDaoTestable.Params memory defaultParams;
 		defaultParams.mintTokensPerWeekAmount = 10 * 10**18;
 		defaultParams.mintReputationTokensPerWeekAmount = 5 * 10**18;
-		defaultParams.oneAdSlotPrice = 2 * 10e18;
+		defaultParams.oneAdSlotPrice = 2 * 10**18;
 		// Current ETH price is ~$450. One token will be worth ~$45. One ad will cost ~$90 (2 tokens)
 		defaultParams.oneTokenPriceInWei = 0.1 * 10**18;
 		defaultParams.repTokensReward_Host = 2 * 10**18;

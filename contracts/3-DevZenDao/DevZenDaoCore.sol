@@ -184,7 +184,7 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 		devZenToken.burn(msg.sender, params.oneAdSlotPrice);
 
 		// 3 - add ad to the slot 
-		nextEpisode.adSlots[nextEpisode.usedSlots] = _adText;
+		nextEpisode.adSlots.push(_adText);
 		nextEpisode.usedSlots++;
 	}
 
