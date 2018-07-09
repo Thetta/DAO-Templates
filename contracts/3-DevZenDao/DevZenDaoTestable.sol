@@ -8,6 +8,12 @@ import "@thetta/core/contracts/tokens/StdDaoToken.sol";
 
 import "./DevZenDaoCore.sol";
 
+/**
+ * @title DevZenDaoTestable
+ * @dev DevZenDaoTestable is for testing DevZenDaoCore.
+ * The difference between DevZenDao and DevZenDaoTestable is that there are no Thetta's isCanDo() modifiers in DevZenDaoTestable
+ * which helps in testing only the logic.
+ */
 contract DevZenDaoTestable is DevZenDaoCore {
 
 	constructor(
