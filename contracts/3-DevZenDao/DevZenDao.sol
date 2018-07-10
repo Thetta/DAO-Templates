@@ -49,12 +49,12 @@ contract DevZenDao is DevZenDaoCore {
 	}
 
 	/**
-	 * @dev Guest did not appear -> penalize hime) 
+	 * @dev Guest did not appear -> penalize him) 
 	 * This method should require voting!
 	 * Notice: DevZen_selectNextHost is a custom action!
 	*/
 	function burnGuestStake() isCanDo("DevZen_burnGuestStake") public {
-		// TODO:
+		super._burnGuestStake();
 	}
 
 	/**
@@ -85,6 +85,10 @@ contract DevZenDao is DevZenDaoCore {
 		super._runAdsInTheNextEpisode(_adText);
 	}
 
+	/**
+	 * @dev Become the next guest.
+	 * To become a guest sender should buy 5 DZT and approve dao to put them at stake. Sender will get back tokens after the show.
+	 */
 	function becomeTheNextShowGuest() public {
 		super._becomeTheNextShowGuest();
 	}

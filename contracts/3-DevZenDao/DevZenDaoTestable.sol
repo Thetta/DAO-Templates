@@ -52,7 +52,7 @@ contract DevZenDaoTestable is DevZenDaoCore {
 	 * @dev Guest did not appear -> penalize him) 
 	*/
 	function burnGuestStake() public {
-		// TODO:
+		super._burnGuestStake();
 	}
 
 	/**
@@ -81,6 +81,10 @@ contract DevZenDaoTestable is DevZenDaoCore {
 		super._runAdsInTheNextEpisode(_adText);
 	}
 
+	/**
+	 * @dev Become the next guest.
+	 * To become a guest sender should buy 5 DZT and approve dao to put them at stake. Sender will get back tokens after the show.
+	 */
 	function becomeTheNextShowGuest() public {
 		super._becomeTheNextShowGuest();
 	}

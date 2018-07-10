@@ -58,12 +58,26 @@ contract("DevZenDaoCore", (accounts) => {
 		});
 	});
 
+	describe("burnGuestStake", () => {
+		it("should burn guest's stake", async() => {
+			await devZenDaoTestable.moveToNextEpisode().should.be.fulfilled;
+
+			const balanceBeforeBurn = await devZenToken.balanceOf(devZenDaoTestable.address);
+			assert.equal(balanceBeforeBurn.toNumber(), 10 * 10**18, "on new episode 10 DZT are minted to contract");
+
+			await devZenDaoTestable.burnGuestStake().should.be.fulfilled;
+
+			const balanceAfterBurn = await devZenToken.balanceOf(devZenDaoTestable.address);
+			assert.equal(balanceAfterBurn.toNumber(), 5 * 10**18, "burns 5 DZT at guest's stake");
+		});
+	});
+
 	describe("emergency_ChangeTheGuest", () => {
-		it("should change next episode's guest", async() => {
+		it("should change next episode's emergency guest", async() => {
 			await devZenDaoTestable.emergency_ChangeTheGuest(guestAddr1).should.be.fulfilled;
 			const nextEpisode = await devZenDaoTestable.nextEpisode();
-			const nextShowGuestIndex = 1;
-			assert.equal(nextEpisode[nextShowGuestIndex], guestAddr1);
+			const lastEmergencyGuestIndex = 4;
+			assert.equal(nextEpisode[lastEmergencyGuestIndex], guestAddr1);
 		});
 	});
 
@@ -106,8 +120,71 @@ contract("DevZenDaoCore", (accounts) => {
 			await devZenDaoTestable.runAdsInTheNextEpisode("ANY_TEXT", {from: patronAddr1}).should.be.fulfilled;
 
 			const nextEpisode = await devZenDaoTestable.nextEpisode();
-			const usedSlotsIndex = 4;
+			const usedSlotsIndex = 5;
 			assert.equal(nextEpisode[usedSlotsIndex].toNumber(), 1, "used slots number should be increased by 1");
+		});
+	});
+
+	describe("becomeTheNextShowGuest", () => {
+		it("should throw if next guest is already selected", async() => {
+			await devZenDaoTestable.moveToNextEpisode().should.be.fulfilled;
+			// guest1 buys 5 DZT, allows to spend them and becomes the next guest
+			const value = web3.toWei("0.5", "ether");
+			await devZenDaoTestable.buyTokens({ value: value, from: guestAddr1 }).should.be.fulfilled;
+			await devZenToken.approve(devZenDaoTestable.address, 5 * 10**18, { from: guestAddr1 });
+			await devZenDaoTestable.becomeTheNextShowGuest({ from: guestAddr1 }).should.be.fulfilled;
+			// guest2 buys 5 DZT, allows to spend them and wants to become the next guest
+			await devZenDaoTestable.buyTokens({ value: value, from: guestAddr2 }).should.be.fulfilled;
+			await devZenToken.approve(devZenDaoTestable.address, 5 * 10**18, { from: guestAddr2 });
+			await devZenDaoTestable.becomeTheNextShowGuest({ from: guestAddr2 }).should.be.rejectedWith("revert");
+		});
+
+		it("should throw if sender does not have enough DZT", async() => {
+			await devZenDaoTestable.becomeTheNextShowGuest({ from: guestAddr1 }).should.be.rejectedWith("revert");
+		});
+
+		it("should throw if sender has not allowed dao to put enough DZT at stake", async() => {
+			await devZenDaoTestable.moveToNextEpisode().should.be.fulfilled;
+			// guest1 buys 5 DZT
+			const value = web3.toWei("0.5", "ether");
+			await devZenDaoTestable.buyTokens({ value: value, from: guestAddr1 }).should.be.fulfilled;
+			await devZenDaoTestable.becomeTheNextShowGuest({ from: guestAddr1 }).should.be.rejectedWith("revert");
+		});
+
+		it("should lock tokens", async() => {
+			await devZenDaoTestable.moveToNextEpisode().should.be.fulfilled;
+			// guest1 buys 5 DZT
+			const value = web3.toWei("0.5", "ether");
+			await devZenDaoTestable.buyTokens({ value: value, from: guestAddr1 }).should.be.fulfilled;
+			// guest1 allows to spend his 5 DZT
+			await devZenToken.approve(devZenDaoTestable.address, 5 * 10**18, { from: guestAddr1 });
+			
+			let guestBalance = await devZenToken.balanceOf(guestAddr1);
+			let contractBalance = await devZenToken.balanceOf(devZenDaoTestable.address);
+			assert.equal(guestBalance, 5 * 10**18, "guest balance should be equal 5 DZT");
+			assert.equal(contractBalance, 5 * 10**18, "contract balance should be equal to 5 DZT, 10 initial DZT - 5 bought by the guest");
+
+			await devZenDaoTestable.becomeTheNextShowGuest({ from: guestAddr1 }).should.be.fulfilled;
+			
+			guestBalance = await devZenToken.balanceOf(guestAddr1);
+			contractBalance = await devZenToken.balanceOf(devZenDaoTestable.address);
+			assert.equal(guestBalance, 0, "guest balance should be 0 because he has put his 5 DZT at stake");
+			assert.equal(contractBalance, 10 * 10**18, "contract balance should be equal to 10 DZT, 10 initial DZT - 5 bought by the guest + 5 put at stake by the guest");
+		});
+
+		it("should set next show guest", async() => {
+			await devZenDaoTestable.moveToNextEpisode().should.be.fulfilled;
+			// guest1 buys 5 DZT
+			const value = web3.toWei("0.5", "ether");
+			await devZenDaoTestable.buyTokens({ value: value, from: guestAddr1 }).should.be.fulfilled;
+			// guest1 allows to spend his 5 DZT
+			await devZenToken.approve(devZenDaoTestable.address, 5 * 10**18, { from: guestAddr1 });
+			
+			await devZenDaoTestable.becomeTheNextShowGuest({ from: guestAddr1 }).should.be.fulfilled;
+
+			const nextEpisode = await devZenDaoTestable.nextEpisode();
+			const nextShowGuestIndex = 1;
+			assert.equal(nextEpisode[nextShowGuestIndex], guestAddr1, "guest1 should be the next show guest");
 		});
 	});
 

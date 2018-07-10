@@ -38,6 +38,7 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 		uint mintReputationTokensPerWeekAmount;
 		uint oneTokenPriceInWei;
 		uint oneAdSlotPrice;
+		uint becomeGuestStake;
 		uint repTokensReward_Host;
 		uint repTokensReward_Guest;
 		uint repTokensReward_TeamMembers;		// for all team members! not for one member!
@@ -49,6 +50,7 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 		address nextShowGuest;
 		address prevShowHost;
 		address prevShowGuest;
+		address lastEmergencyGuest;
 		string[] adSlots;
 		uint usedSlots;
 		uint createdAt;
@@ -100,8 +102,7 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 	 * @dev Guest did not appear -> penalize him) 
 	*/
 	function _burnGuestStake() internal onlyOwner {
-		// TODO:
-
+		devZenToken.burn(params.becomeGuestStake);
 	}
 
 	/**
@@ -110,7 +111,7 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 	 * However, sometimes DevZen team should be able to fix the next guest!
 	*/
 	function _emergency_ChangeTheGuest(address _guest) internal onlyOwner {
-		nextEpisode.nextShowGuest = _guest;
+		nextEpisode.lastEmergencyGuest = _guest;
 	}
 
 	/**
@@ -135,8 +136,14 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 		nextEpisode.usedSlots = 0;
 		nextEpisode.createdAt = now;
 
-		// 4 - mint some reputation tokens to the Guest 
-		repToken.mint(nextEpisode.prevShowGuest, params.repTokensReward_Guest);
+		// 4 - mint DZTREP tokens to the Guest 
+		if(nextEpisode.lastEmergencyGuest == 0x0) {
+			// if guest has come to the show
+			repToken.mint(nextEpisode.prevShowGuest, params.repTokensReward_Guest);
+		} else {
+			// guest has missed the show, mint to emergency guest
+			repToken.mint(nextEpisode.lastEmergencyGuest, params.repTokensReward_Guest);
+		}
 
 		// 5 - mint some reputation tokens to the Host 
 		repToken.mint(nextEpisode.prevShowHost, params.repTokensReward_Host);
@@ -156,6 +163,22 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 			}
 		}
 		*/
+
+		// 7 - recovering guests's stake
+		// if this is not the 1st episode
+		// TODO: neat way to check the 1st episode
+		if(nextEpisode.prevShowHost != 0x0) {
+			if(nextEpisode.lastEmergencyGuest == 0x0) {
+				// if guest has come to the show then transfer DZT back
+				devZenToken.transfer(nextEpisode.prevShowGuest, params.becomeGuestStake);
+			} else {
+				// guest has missed the show, burn his stake
+				_burnGuestStake();
+			}
+		}
+
+		// 8 - clear last emergency guest
+		nextEpisode.lastEmergencyGuest = 0x0;
 	}
 
 	// ------------------------------------------------------ 
@@ -178,16 +201,24 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 		nextEpisode.usedSlots++;
 	}
 
-	function _becomeTheNextShowGuest() internal onlyOwner {
-		require(devZenToken.balanceOf(msg.sender)!=0); 
+	/**
+	 * @dev Become the next guest.
+	 * To become a guest sender should buy 5 DZT and approve dao to put them at stake. Sender will get back tokens after the show.
+	 */
+	function _becomeTheNextShowGuest() internal {
+		// 0 - check if guest is still not selected
+		require(0x0 == nextEpisode.nextShowGuest);
 
-		// 1 - check if guest is still not selected
-		require(0x0==nextEpisode.nextShowGuest);
+		// 1 - check that sender has required amount of tokens
+		require(devZenToken.balanceOf(msg.sender) >= params.becomeGuestStake); 
 
-		// TODO: 
-		// 2 - lock (stake/bond) tokens 
+		// 2 - check that sender has allowed current contract to put 5 DZT at stake
+		require(devZenToken.allowance(msg.sender, address(this)) >= params.becomeGuestStake);
 
-		// 3 - select next host
+		// 3 - lock tokens, transfer tokens from sender to current contract
+		devZenToken.transferFrom(msg.sender, address(this), params.becomeGuestStake);
+
+		// 4 - select next host
 		nextEpisode.nextShowGuest = msg.sender;
 	}
 
@@ -198,7 +229,7 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 	/**
 	* @dev Any listener can get a ERC20 “devzen” tokens by sending X ETHers to the DevZen DAO and becomes a “patron” (i.e. token holder).
     */
-	function _buyTokens() public payable onlyOwner {
+	function _buyTokens() public payable {
 		require(msg.value != 0);
 		
 		// 1 - calculate how many tokens msg.sender wants to buy (use oneTokenPriceInWei)
@@ -216,7 +247,7 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 	 * @return true if 1 week has passed else false
 	 */
 	function _isOneWeekPassed() internal view onlyOwner returns(bool) {
-		// return true is this is the 1st episode
+		// return true if this is the 1st episode
 		if(nextEpisode.createdAt == 0) return true;
 
 		return nextEpisode.createdAt + 7 days <= now;
