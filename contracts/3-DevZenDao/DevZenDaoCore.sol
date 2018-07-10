@@ -71,8 +71,6 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 
 	/**
 	 * @dev Change the DAO parameters
-	 * This method should require voting!
-	 * Notice: DevZen_updateDaoParams is a custom action!
 	*/
 	function _updateDaoParams(Params _params) internal onlyOwner {
 		params = _params;
@@ -80,8 +78,6 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 
 	/**
 	 * @dev Withdraw all collected ETH to the _output.
-	 * This method should require voting!
-	 * Notice: DevZen_withdrawEther is a custom action!
 	*/
 	function _withdrawEther(address _output) internal onlyOwner {
 		// TODO: better to use moneyflow instead of _output
@@ -91,8 +87,6 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 
 	/**
 	 * @dev Select next episode's host
-	 * This method should require voting!
-	 * Notice: DevZen_selectNextHost is a custom action!
 	*/
 	function _selectNextHost(address _nextHost) internal onlyOwner {
 		// 1 - check if host is still not selected
@@ -103,9 +97,7 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 	}
 
 	/**
-	 * @dev Guest did not appear -> penalize hime) 
-	 * This method should require voting!
-	 * Notice: DevZen_selectNextHost is a custom action!
+	 * @dev Guest did not appear -> penalize him) 
 	*/
 	function _burnGuestStake() internal onlyOwner {
 		// TODO:
@@ -116,7 +108,6 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 	 * @dev Set the guest (emergency)
 	 * In normal circumst. people should use 'becomeTheNextShowGuest' method. 
 	 * However, sometimes DevZen team should be able to fix the next guest!
-	 * Notice: DevZen_emergencyChangeGuest is a custom action!
 	*/
 	function _emergency_ChangeTheGuest(address _guest) internal onlyOwner {
 		nextEpisode.nextShowGuest = _guest;
@@ -125,7 +116,6 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 	/**
 	 * @dev Move to next episode
 	 * Should be called right AFTER the recording of the current episode
-	 * Notice: DevZen_moveToNextExpisode is a custom action!
 	*/
 	function _moveToNextEpisode() internal onlyOwner {
 		// 1 - check if 1 week is passed
@@ -209,7 +199,6 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 	* @dev Any listener can get a ERC20 “devzen” tokens by sending X ETHers to the DevZen DAO and becomes a “patron” (i.e. token holder).
     */
 	function _buyTokens() public payable onlyOwner {
-
 		require(msg.value != 0);
 		
 		// 1 - calculate how many tokens msg.sender wants to buy (use oneTokenPriceInWei)
@@ -227,7 +216,6 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 	 * @return true if 1 week has passed else false
 	 */
 	function _isOneWeekPassed() internal view onlyOwner returns(bool) {
-
 		// return true is this is the 1st episode
 		if(nextEpisode.createdAt == 0) return true;
 

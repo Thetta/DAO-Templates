@@ -29,8 +29,6 @@ contract DevZenDaoTestable is DevZenDaoCore {
 
 	/**
 	 * @dev Change the DAO parameters
-	 * This method should require voting!
-	 * Notice: DevZen_updateDaoParams is a custom action!
 	*/
 	function updateDaoParams(Params _params) public {
 		super._updateDaoParams(_params);
@@ -38,8 +36,6 @@ contract DevZenDaoTestable is DevZenDaoCore {
 
 	/**
 	 * @dev Withdraw all collected ETH to the _output.
-	 * This method should require voting!
-	 * Notice: DevZen_withdrawEther is a custom action!
 	*/
 	function withdrawEther(address _output) public {
 		super._withdrawEther(_output);
@@ -47,17 +43,13 @@ contract DevZenDaoTestable is DevZenDaoCore {
 
 	/**
 	 * @dev Select next episode's host
-	 * This method should require voting!
-	 * Notice: DevZen_selectNextHost is a custom action!
 	*/
 	function selectNextHost(address _nextHost) public {
 		super._selectNextHost(_nextHost);
 	}
 
 	/**
-	 * @dev Guest did not appear -> penalize hime) 
-	 * This method should require voting!
-	 * Notice: DevZen_selectNextHost is a custom action!
+	 * @dev Guest did not appear -> penalize him) 
 	*/
 	function burnGuestStake() public {
 		// TODO:
@@ -67,7 +59,6 @@ contract DevZenDaoTestable is DevZenDaoCore {
 	 * @dev Set the guest (emergency)
 	 * In normal circumst. people should use 'becomeTheNextShowGuest' method. 
 	 * However, sometimes DevZen team should be able to fix the next guest!
-	 * Notice: DevZen_emergencyChangeGuest is a custom action!
 	*/
 	function emergency_ChangeTheGuest(address _guest) public {
 		super._emergency_ChangeTheGuest(_guest);
@@ -76,7 +67,6 @@ contract DevZenDaoTestable is DevZenDaoCore {
 	/**
 	 * @dev Move to next episode
 	 * Should be called right AFTER the recording of the current episode
-	 * Notice: DevZen_moveToNextExpisode is a custom action!
 	*/
 	function moveToNextEpisode() public {
 		super._moveToNextEpisode();
