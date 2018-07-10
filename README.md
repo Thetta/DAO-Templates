@@ -4,10 +4,10 @@ DAO Templates that are built on top of Thetta DAO Framework
 [ ![Codeship Status for Thetta/DAO-Templates](https://app.codeship.com/projects/2dda7d70-5ff8-0136-443b-02dfb7ae7eef/status?branch=master)](https://app.codeship.com/projects/296178)
 
 ## Examples
-- [FineGrainedPermissions](https://github.com/Thetta/DAO-Templates/blob/master/contracts/0-FineGrainedPermissions.sol)
-- [HierarchyDao](https://github.com/Thetta/DAO-Templates/blob/master/contracts/1-HierarchyDao.sol)
-- [BoD](https://github.com/Thetta/DAO-Templates/blob/master/contracts/2-BoD.sol)
-- [DevZenDao](https://github.com/Thetta/DAO-Templates/blob/master/contracts/3-DevZenDao.sol)
+- [FineGrainedPermissions](https://github.com/Thetta/DAO-Templates/blob/master/contracts/0-FineGrainedPermissions/0-FineGrainedPermissions.sol)
+- [HierarchyDao](https://github.com/Thetta/DAO-Templates/blob/master/contracts/1-HierarchyDao/1-HierarchyDao.sol)
+- [BoD](https://github.com/Thetta/DAO-Templates/blob/master/contracts/2-BoD/2-BoD.sol)
+- [DevZenDao](https://github.com/Thetta/DAO-Templates/blob/master/contracts/3-DevZenDao/DevZenDaoFactory.sol)
 
 ## Documentation
 
