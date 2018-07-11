@@ -33,6 +33,16 @@ import "@thetta/core/contracts/tokens/StdDaoToken.sol";
 */
 contract DevZenDaoCore is DaoBaseWithUnpackers {
 
+	event DevZenDaoCore_WithdrawEther(address _output);
+	event DevZenDaoCore_SelectNextHost(address _nextHost);
+	event DevZenDaoCore_BurnGuestStake();
+	event DevZenDaoCore_Emergency_ChangeTheGuest(address _guest);
+	event DevZenDaoCore_MoveToNextEpisode(bool _guestHasCome);
+	event DevZenDaoCore_RunAdsInTheNextEpisode(string _adText);
+	event DevZenDaoCore_BecomeTheNextShowGuest();
+	event DevZenDaoCore_BuyTokens();
+	event DevZenDaoCore_IsOneWeekPassed();
+
 	struct Params {
 		uint mintTokensPerWeekAmount;
 		uint mintReputationTokensPerWeekAmount;
@@ -82,6 +92,7 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 	 * @dev Withdraw all collected ETH to the _output.
 	*/
 	function _withdrawEther(address _output) internal onlyOwner {
+		emit DevZenDaoCore_WithdrawEther(_output);
 		// TODO: better to use moneyflow instead of _output
 		// Specifying _output can lead to hacks and money loss!
 		_output.transfer(address(this).balance);
@@ -91,6 +102,8 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 	 * @dev Select next episode's host
 	*/
 	function _selectNextHost(address _nextHost) internal onlyOwner {
+		emit DevZenDaoCore_SelectNextHost(_nextHost);
+
 		// 1 - check if host is still not selected
 		require(0x0==nextEpisode.nextShowHost);
 
@@ -102,6 +115,7 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 	 * @dev Guest did not appear -> penalize him) 
 	*/
 	function _burnGuestStake() internal onlyOwner {
+		emit DevZenDaoCore_BurnGuestStake();
 		devZenToken.burn(params.becomeGuestStake);
 	}
 
@@ -111,6 +125,7 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 	 * However, sometimes DevZen team should be able to fix the next guest!
 	*/
 	function _emergency_ChangeTheGuest(address _guest) internal onlyOwner {
+		emit DevZenDaoCore_Emergency_ChangeTheGuest(_guest);
 		// 1 - check that next show guest exists
 		require(nextEpisode.nextShowGuest != 0x0);
 		// 2 - set next show guest
@@ -125,6 +140,8 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 	 * Should be called right AFTER the recording of the current episode
 	*/
 	function _moveToNextEpisode(bool _guestHasCome) internal onlyOwner {
+		emit DevZenDaoCore_MoveToNextEpisode(_guestHasCome);
+
 		// 1 - check if 1 week is passed
 		require(_isOneWeekPassed());
 
@@ -187,6 +204,8 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 
 	// Any patron (DevZen token holder) can use DevZen tokens to run ads: Burn k tokens to add your add into the slot (linear, no priority).
 	function _runAdsInTheNextEpisode(string _adText) internal onlyOwner {
+		emit DevZenDaoCore_RunAdsInTheNextEpisode(_adText);
+
 		// 0 - check if we have available slot 
 		require(nextEpisode.usedSlots<5);
 
@@ -206,6 +225,8 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 	 * To become a guest sender should buy 5 DZT and approve dao to put them at stake. Sender will get back tokens after the show.
 	 */
 	function _becomeTheNextShowGuest() internal {
+		emit DevZenDaoCore_BecomeTheNextShowGuest();
+
 		// 0 - check if guest is still not selected
 		require(0x0 == nextEpisode.nextShowGuest);
 
@@ -230,6 +251,8 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 	* @dev Any listener can get a ERC20 “devzen” tokens by sending X ETHers to the DevZen DAO and becomes a “patron” (i.e. token holder).
     */
 	function _buyTokens() public payable {
+		emit DevZenDaoCore_BuyTokens();
+
 		require(msg.value != 0);
 		
 		// 1 - calculate how many tokens msg.sender wants to buy (use oneTokenPriceInWei)
@@ -247,6 +270,8 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 	 * @return true if 1 week has passed else false
 	 */
 	function _isOneWeekPassed() internal view onlyOwner returns(bool) {
+		emit DevZenDaoCore_IsOneWeekPassed();
+
 		// return true if this is the 1st episode
 		if(nextEpisode.createdAt == 0) return true;
 
