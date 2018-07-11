@@ -50,10 +50,10 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 		address nextShowGuest;
 		address prevShowHost;
 		address prevShowGuest;
-		address lastEmergencyGuest;
 		string[] adSlots;
 		uint usedSlots;
 		uint createdAt;
+		bool isGuestUpdated;
 	}
 
 	StdDaoToken public devZenToken;
@@ -111,14 +111,20 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 	 * However, sometimes DevZen team should be able to fix the next guest!
 	*/
 	function _emergency_ChangeTheGuest(address _guest) internal onlyOwner {
-		nextEpisode.lastEmergencyGuest = _guest;
+		// 1 - check that next show guest exists
+		require(nextEpisode.nextShowGuest != 0x0);
+		// 2 - set next show guest
+		nextEpisode.nextShowGuest = _guest;
+		// 3 - set that there was guest substitution
+		nextEpisode.isGuestUpdated = true;
 	}
 
 	/**
 	 * @dev Move to next episode
+	 * @param _guestHasCome Whether the guest(initual or emergency) has come to the show
 	 * Should be called right AFTER the recording of the current episode
 	*/
-	function _moveToNextEpisode() internal onlyOwner {
+	function _moveToNextEpisode(bool _guestHasCome) internal onlyOwner {
 		// 1 - check if 1 week is passed
 		require(_isOneWeekPassed());
 
@@ -137,12 +143,8 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 		nextEpisode.createdAt = now;
 
 		// 4 - mint DZTREP tokens to the Guest 
-		if(nextEpisode.lastEmergencyGuest == 0x0) {
-			// if guest has come to the show
+		if(_guestHasCome) {
 			repToken.mint(nextEpisode.prevShowGuest, params.repTokensReward_Guest);
-		} else {
-			// guest has missed the show, mint to emergency guest
-			repToken.mint(nextEpisode.lastEmergencyGuest, params.repTokensReward_Guest);
 		}
 
 		// 5 - mint some reputation tokens to the Host 
@@ -165,20 +167,18 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 		*/
 
 		// 7 - recovering guests's stake
-		// if this is not the 1st episode
-		// TODO: neat way to check the 1st episode
-		if(nextEpisode.prevShowHost != 0x0) {
-			if(nextEpisode.lastEmergencyGuest == 0x0) {
-				// if guest has come to the show then transfer DZT back
-				devZenToken.transfer(nextEpisode.prevShowGuest, params.becomeGuestStake);
-			} else {
-				// guest has missed the show, burn his stake
+		if(_guestHasCome && !nextEpisode.isGuestUpdated) {
+			// if initial guest has come to the show then transfer DZT back
+			devZenToken.transfer(nextEpisode.prevShowGuest, params.becomeGuestStake);
+		} else {
+			// if there was a guest who has missed the show then burn his stake
+			if(nextEpisode.prevShowGuest != 0x0) {
 				_burnGuestStake();
 			}
 		}
 
-		// 8 - clear last emergency guest
-		nextEpisode.lastEmergencyGuest = 0x0;
+		// 8 - clear guest substitution
+		nextEpisode.isGuestUpdated = false;
 	}
 
 	// ------------------------------------------------------ 

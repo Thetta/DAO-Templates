@@ -66,10 +66,11 @@ contract DevZenDaoTestable is DevZenDaoCore {
 
 	/**
 	 * @dev Move to next episode
+	 * @param _guestHasCome Whether the guest(initual or emergency) has come to the show
 	 * Should be called right AFTER the recording of the current episode
 	*/
-	function moveToNextEpisode() public {
-		super._moveToNextEpisode();
+	function moveToNextEpisode(bool _guestHasCome) public {
+		super._moveToNextEpisode(_guestHasCome);
 	}
 
 	// ------------------------------------------------------ 
