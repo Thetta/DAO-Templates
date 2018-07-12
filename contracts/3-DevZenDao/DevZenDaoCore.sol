@@ -35,6 +35,7 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 
 	event DevZenDaoCore_WithdrawEther(address _output);
 	event DevZenDaoCore_SelectNextHost(address _nextHost);
+	event DevZenDaoCore_ChangeTheGuest(address _guest);
 	event DevZenDaoCore_BurnGuestStake();
 	event DevZenDaoCore_Emergency_ChangeTheGuest(address _guest);
 	event DevZenDaoCore_MoveToNextEpisode(bool _guestHasCome);
@@ -42,6 +43,7 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 	event DevZenDaoCore_BecomeTheNextShowGuest();
 	event DevZenDaoCore_BuyTokens();
 	event DevZenDaoCore_IsOneWeekPassed();
+	event DevZenDaoCore_SetGuest(address _guest);
 
 	struct Params {
 		uint mintTokensPerWeekAmount;
@@ -63,7 +65,7 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 		string[] adSlots;
 		uint usedSlots;
 		uint createdAt;
-		bool isGuestUpdated;
+		bool isEmergencyGuest;
 	}
 
 	StdDaoToken public devZenToken;
@@ -120,6 +122,27 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 	}
 
 	/**
+	 * @dev Changes the guest in "legal" way
+	 * @param _guest New guest address
+	 * When guest is changed via this function we ensure that stake is returned to previous guest.
+	 */
+	function _changeTheGuest(address _guest) internal onlyOwner {
+		emit DevZenDaoCore_ChangeTheGuest(_guest);
+		// 0 - check that next show guest exists
+		require(0x0 != nextEpisode.nextShowGuest);
+		// 1 - save previous guest address for future use
+		address prevGuest = nextEpisode.nextShowGuest;
+		// 2 - set the new guest
+		_setGuest(_guest);
+		// 3 - if previous guest is not emergency guest then return stake
+		if(!nextEpisode.isEmergencyGuest) {
+			devZenToken.transfer(prevGuest, params.becomeGuestStake);
+		}
+		// 4 - mark guest as legal
+		nextEpisode.isEmergencyGuest = false;
+	}
+
+	/**
 	 * @dev Set the guest (emergency)
 	 * In normal circumst. people should use 'becomeTheNextShowGuest' method. 
 	 * However, sometimes DevZen team should be able to fix the next guest!
@@ -130,8 +153,8 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 		require(nextEpisode.nextShowGuest != 0x0);
 		// 2 - set next show guest
 		nextEpisode.nextShowGuest = _guest;
-		// 3 - set that there was guest substitution
-		nextEpisode.isGuestUpdated = true;
+		// 3 - mark guest as emergency guest
+		nextEpisode.isEmergencyGuest = true;
 	}
 
 	/**
@@ -184,7 +207,7 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 		*/
 
 		// 7 - recovering guests's stake
-		if(_guestHasCome && !nextEpisode.isGuestUpdated) {
+		if(_guestHasCome && !nextEpisode.isEmergencyGuest) {
 			// if initial guest has come to the show then transfer DZT back
 			devZenToken.transfer(nextEpisode.prevShowGuest, params.becomeGuestStake);
 		} else {
@@ -194,8 +217,8 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 			}
 		}
 
-		// 8 - clear guest substitution
-		nextEpisode.isGuestUpdated = false;
+		// 8 - clear guest's emergency
+		nextEpisode.isEmergencyGuest = false;
 	}
 
 	// ------------------------------------------------------ 
@@ -230,17 +253,8 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 		// 0 - check if guest is still not selected
 		require(0x0 == nextEpisode.nextShowGuest);
 
-		// 1 - check that sender has required amount of tokens
-		require(devZenToken.balanceOf(msg.sender) >= params.becomeGuestStake); 
-
-		// 2 - check that sender has allowed current contract to put 5 DZT at stake
-		require(devZenToken.allowance(msg.sender, address(this)) >= params.becomeGuestStake);
-
-		// 3 - lock tokens, transfer tokens from sender to current contract
-		devZenToken.transferFrom(msg.sender, address(this), params.becomeGuestStake);
-
-		// 4 - select next host
-		nextEpisode.nextShowGuest = msg.sender;
+		// 1 - set the sender as the new guest
+		_setGuest(msg.sender);
 	}
 
 	// ---------------------------------------------- 
@@ -281,6 +295,27 @@ contract DevZenDaoCore is DaoBaseWithUnpackers {
 	// do not allow to send ETH here. Instead use buyTokens method
 	function(){
 		revert();
+	}
+
+	//-----------------------------------------------
+	// These are helper methods for usage in contract
+	//-----------------------------------------------
+
+	/**
+	 * @dev Sets the guest for next show in "legal" way
+	 * @param _guest New guest address
+	 * New guest should have enough DZT and should allow current contract to transfer his stake
+	 */
+	function _setGuest(address _guest) internal {
+		emit DevZenDaoCore_SetGuest(_guest);
+		// 0 - check that guest has required amount of tokens
+		require(devZenToken.balanceOf(_guest) >= params.becomeGuestStake); 
+		// 1 - check that guest has allowed current contract to put 5 DZT at stake
+		require(devZenToken.allowance(_guest, address(this)) >= params.becomeGuestStake);
+		// 3 - lock tokens, transfer tokens from guest to current contract
+		devZenToken.transferFrom(_guest, address(this), params.becomeGuestStake);
+		// 4 - select next guest
+		nextEpisode.nextShowGuest = _guest;
 	}
 
 }

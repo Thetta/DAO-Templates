@@ -58,6 +58,15 @@ contract DevZenDao is DevZenDaoCore {
 	}
 
 	/**
+	 * @dev Changes the guest in "legal" way
+	 * @param _guest New guest address
+	 * When guest is changed via this function we ensure that stake is returned to previous guest.
+	 */
+	function changeTheGuest(address _guest) isCanDo("DevZen_changeGuest") public {
+		super._changeTheGuest(_guest);
+	}
+
+	/**
 	 * @dev Set the guest (emergency)
 	 * In normal circumst. people should use 'becomeTheNextShowGuest' method. 
 	 * However, sometimes DevZen team should be able to fix the next guest!

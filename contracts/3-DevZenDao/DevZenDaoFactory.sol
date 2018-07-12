@@ -87,6 +87,7 @@ contract DevZenDaoFactory {
 		dao.allowActionByVoting("DevZen_withdrawEther", dao.repToken());
 		dao.allowActionByVoting("DevZen_selectNextHost", dao.repToken());
 		dao.allowActionByVoting("DevZen_burnGuestStake", dao.repToken());
+		dao.allowActionByVoting("DevZen_changeGuest", dao.repToken());
 		dao.allowActionByVoting("DevZen_emergencyChangeGuest", dao.repToken());
 		dao.allowActionByVoting("DevZen_moveToNextEpisode", dao.repToken());
 
@@ -108,6 +109,7 @@ contract DevZenDaoFactory {
 		dao.allowActionByAddress("DevZen_withdrawEther", aac);
 		dao.allowActionByAddress("DevZen_selectNextHost", aac);
 		dao.allowActionByAddress("DevZen_burnGuestStake", aac);
+		dao.allowActionByAddress("DevZen_changeGuest", aac);
 		dao.allowActionByAddress("DevZen_emergencyChangeGuest", aac);
 		dao.allowActionByAddress("DevZen_moveToNextEpisode", aac);
 
@@ -119,6 +121,7 @@ contract DevZenDaoFactory {
 		aac.setVotingParams("DevZen_withdrawEther", VOTING_TYPE_1P1V, bytes32(0), "DevZenTeam", bytes32(50), bytes32(50), 0);
 		aac.setVotingParams("DevZen_selectNextHost", VOTING_TYPE_1P1V, bytes32(0), "DevZenTeam", bytes32(50), bytes32(50), 0);
 		aac.setVotingParams("DevZen_burnGuestStake", VOTING_TYPE_1P1V, bytes32(0), "DevZenTeam", bytes32(50), bytes32(50), 0);
+		aac.setVotingParams("DevZen_changeGuest", VOTING_TYPE_1P1V, bytes32(0), "DevZenTeam", bytes32(50), bytes32(50), 0);
 		aac.setVotingParams("DevZen_emergencyChangeGuest", VOTING_TYPE_1P1V, bytes32(0), "DevZenTeam", bytes32(50), bytes32(50), 0);
 		aac.setVotingParams("DevZen_moveToNextEpisode", VOTING_TYPE_1P1V, bytes32(0), "DevZenTeam", bytes32(50), bytes32(50), 0);
 

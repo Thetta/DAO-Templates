@@ -56,6 +56,13 @@ contract DevZenDaoTestable is DevZenDaoCore {
 	}
 
 	/**
+	 * @dev Changes the guest in "legal" way
+	 */
+	function changeTheGuest(address _guest) public {
+		super._changeTheGuest(_guest);
+	}
+
+	/**
 	 * @dev Set the guest (emergency)
 	 * In normal circumst. people should use 'becomeTheNextShowGuest' method. 
 	 * However, sometimes DevZen team should be able to fix the next guest!
@@ -112,6 +119,17 @@ contract DevZenDaoTestable is DevZenDaoCore {
 	// do not allow to send ETH here. Instead use buyTokens method
 	function() {
 		revert();
+	}
+
+	//-----------------------------------------------
+	// These are helper methods for usage in contract
+	//-----------------------------------------------
+
+	/**
+	 * @dev Sets the guest for next show in "legal" way
+	 */
+	function setGuest(address _guest) public {
+		super._setGuest(_guest);
 	}
 
 }

@@ -11,6 +11,7 @@ contract("DevZenDaoCore", (accounts) => {
 	const hostAddr2 = accounts[3];
 	const guestAddr1 = accounts[4];
 	const guestAddr2 = accounts[5];
+	const guestAddr3 = accounts[6];
 
 	let devZenDaoFactoryTestable;
 	let devZenDaoTestable;
@@ -73,6 +74,94 @@ contract("DevZenDaoCore", (accounts) => {
 
 			const balanceAfterBurn = await devZenToken.balanceOf(devZenDaoTestable.address);
 			assert.equal(balanceAfterBurn.toNumber(), 5 * 10**18, "burns 5 DZT at guest's stake");
+		});
+	});
+
+	describe("changeTheGuest", () => {
+		it("should throw if next guest is not selected", async() => {
+			await devZenDaoTestable.changeTheGuest(guestAddr1).should.be.rejectedWith("revert");
+		});
+
+		it("should set the new guest", async() => {
+			await devZenDaoTestable.moveToNextEpisode(false).should.be.fulfilled;
+			const value = web3.toWei("0.5", "ether");
+
+			// guest1 buys 5 DZT
+			await devZenDaoTestable.buyTokens({ value: value, from: guestAddr1 }).should.be.fulfilled;
+			// guest1 allows to spend his 5 DZT
+			await devZenToken.approve(devZenDaoTestable.address, 5 * 10**18, { from: guestAddr1 });
+			// guest1 becomes the next show guest
+			await devZenDaoTestable.becomeTheNextShowGuest({ from: guestAddr1 }).should.be.fulfilled;
+
+			const nextShowGuestIndex = 1;
+			let nextEpisode = await devZenDaoTestable.nextEpisode();
+			assert.equal(nextEpisode[nextShowGuestIndex], guestAddr1, "guest1 is now guest because he has paid for it");
+
+			// guest2 buys 5 DZT
+			await devZenDaoTestable.buyTokens({ value: value, from: guestAddr2 }).should.be.fulfilled;
+			// guest2 allows to spend his 5 DZT
+			await devZenToken.approve(devZenDaoTestable.address, 5 * 10**18, { from: guestAddr2 });
+
+			// manually change the guest to guest2
+			await devZenDaoTestable.changeTheGuest(guestAddr2).should.be.fulfilled;
+
+			nextEpisode = await devZenDaoTestable.nextEpisode();
+			assert.equal(nextEpisode[nextShowGuestIndex], guestAddr2, "guest2 is now guest because he was selected manually");
+		});
+
+		it("should return stake to previous guest", async() => {
+			await devZenDaoTestable.moveToNextEpisode(false).should.be.fulfilled;
+			const value = web3.toWei("0.5", "ether");
+
+			// guest1 buys 5 DZT
+			await devZenDaoTestable.buyTokens({ value: value, from: guestAddr1 }).should.be.fulfilled;
+			// guest1 allows to spend his 5 DZT
+			await devZenToken.approve(devZenDaoTestable.address, 5 * 10**18, { from: guestAddr1 });
+			// guest1 becomes the next show guest
+			await devZenDaoTestable.becomeTheNextShowGuest({ from: guestAddr1 }).should.be.fulfilled;
+
+			// guest2 buys 5 DZT
+			await devZenDaoTestable.buyTokens({ value: value, from: guestAddr2 }).should.be.fulfilled;
+			// guest2 allows to spend his 5 DZT
+			await devZenToken.approve(devZenDaoTestable.address, 5 * 10**18, { from: guestAddr2 });
+
+			const guest1BalanceBefore = await devZenToken.balanceOf(guestAddr1);
+			assert.equal(guest1BalanceBefore.toNumber(), 0, "should be 0 because guest1 bought 5 DZT and put them at stake to become a guest")
+
+			// manually change the guest to guest2
+			await devZenDaoTestable.changeTheGuest(guestAddr2).should.be.fulfilled;
+
+			const guest1BalanceAfter = await devZenToken.balanceOf(guestAddr1);
+			assert.equal(guest1BalanceAfter.toNumber(), 5 * 10**18, "should be 5 because stake is returned to guest1");
+		});
+
+		it("should not return stake to previous guest if it was an emergency guest", async() => {
+			await devZenDaoTestable.moveToNextEpisode(false).should.be.fulfilled;
+			const value = web3.toWei("0.5", "ether");
+
+			// guest1 buys 5 DZT
+			await devZenDaoTestable.buyTokens({ value: value, from: guestAddr1 }).should.be.fulfilled;
+			// guest1 allows to spend his 5 DZT
+			await devZenToken.approve(devZenDaoTestable.address, 5 * 10**18, { from: guestAddr1 });
+			// guest1 becomes the next show guest
+			await devZenDaoTestable.becomeTheNextShowGuest({ from: guestAddr1 }).should.be.fulfilled;
+
+			// host sets guest2 an emergency guest
+			await devZenDaoTestable.emergency_ChangeTheGuest(guestAddr2).should.be.fulfilled;
+
+			// guest3 buys 5 DZT
+			await devZenDaoTestable.buyTokens({ value: value, from: guestAddr3 }).should.be.fulfilled;
+			// guest3 allows to spend his 5 DZT
+			await devZenToken.approve(devZenDaoTestable.address, 5 * 10**18, { from: guestAddr3 });
+
+			const balanceGuest2Before = await devZenToken.balanceOf(guestAddr2);
+			assert.equal(balanceGuest2Before.toNumber(), 0, "should be 0 because it is an emergency guest");
+
+			// host sets "legal" guest
+			await devZenDaoTestable.changeTheGuest(guestAddr3).should.be.fulfilled;
+
+			const balanceGuest2After = await devZenToken.balanceOf(guestAddr2);
+			assert.equal(balanceGuest2After.toNumber(), 0, "should be 0 because emergency guest put nothing at stake");
 		});
 	});
 
@@ -268,7 +357,53 @@ contract("DevZenDaoCore", (accounts) => {
 			await devZenToken.approve(devZenDaoTestable.address, 5 * 10**18, { from: guestAddr2 });
 			await devZenDaoTestable.becomeTheNextShowGuest({ from: guestAddr2 }).should.be.rejectedWith("revert");
 		});
+	});
 
+	describe("buyTokens", () => {
+		it("should throw if msg.value = 0", async() => {
+			await devZenDaoTestable.buyTokens().should.be.rejectedWith("revert");
+		});
+
+		it("should throw if there is an insufficient DZT amount in contract", async() => {
+			const value = web3.toWei(1, "ether");
+			await devZenDaoTestable.buyTokens({ value: value }).should.be.rejectedWith("revert");
+		});
+
+		it("should transfer tokens to sender if there is a sufficient DZT amount", async() => {
+			await devZenDaoTestable.moveToNextEpisode(false).should.be.fulfilled;
+
+			let balancePatron1 = await devZenToken.balanceOf(patronAddr1);
+			assert.equal(balancePatron1.toNumber(), 0, "should be zero because patron has not purchased tokens yet");
+
+			const value = web3.toWei(1, "ether");
+			await devZenDaoTestable.buyTokens({ value: value, from: patronAddr1 }).should.be.fulfilled;
+
+			balancePatron1 = await devZenToken.balanceOf(patronAddr1);
+			assert.equal(balancePatron1.toNumber(), 10 * 10**18, "should be 10 because 1 token costs 0.1 ETH");
+		});
+	});
+
+	describe("isOneWeekPassed", () => {
+		it("should return true if this is the 1st episode", async() => {
+			const isOneWeekPassed = await devZenDaoTestable.isOneWeekPassed();
+			assert.isTrue(isOneWeekPassed, "should be true because this is the 1st episode");
+		});
+
+		it("should return true if 7 days have passed", async() => {
+			await devZenDaoTestable.moveToNextEpisode(false).should.be.fulfilled;
+			await increaseTime(60 * 60 * 24 * 7);
+			const isOneWeekPassed = await devZenDaoTestable.isOneWeekPassed();
+			assert.isTrue(isOneWeekPassed, "should be true because 1 week has passed");
+		});
+
+		it("should return false if 7 days have not passed", async() => {
+			await devZenDaoTestable.moveToNextEpisode(false).should.be.fulfilled;
+			const isOneWeekPassed = await devZenDaoTestable.isOneWeekPassed();
+			assert.isFalse(isOneWeekPassed, "should be false because 1 week has not passed");
+		});
+	});
+
+	describe("setGuest", () => {
 		it("should throw if sender does not have enough DZT", async() => {
 			await devZenDaoTestable.becomeTheNextShowGuest({ from: guestAddr1 }).should.be.rejectedWith("revert");
 		});
@@ -315,50 +450,6 @@ contract("DevZenDaoCore", (accounts) => {
 			const nextEpisode = await devZenDaoTestable.nextEpisode();
 			const nextShowGuestIndex = 1;
 			assert.equal(nextEpisode[nextShowGuestIndex], guestAddr1, "guest1 should be the next show guest");
-		});
-	});
-
-	describe("buyTokens", () => {
-		it("should throw if msg.value = 0", async() => {
-			await devZenDaoTestable.buyTokens().should.be.rejectedWith("revert");
-		});
-
-		it("should throw if there is an insufficient DZT amount in contract", async() => {
-			const value = web3.toWei(1, "ether");
-			await devZenDaoTestable.buyTokens({ value: value }).should.be.rejectedWith("revert");
-		});
-
-		it("should transfer tokens to sender if there is a sufficient DZT amount", async() => {
-			await devZenDaoTestable.moveToNextEpisode(false).should.be.fulfilled;
-
-			let balancePatron1 = await devZenToken.balanceOf(patronAddr1);
-			assert.equal(balancePatron1.toNumber(), 0, "should be zero because patron has not purchased tokens yet");
-
-			const value = web3.toWei(1, "ether");
-			await devZenDaoTestable.buyTokens({ value: value, from: patronAddr1 }).should.be.fulfilled;
-
-			balancePatron1 = await devZenToken.balanceOf(patronAddr1);
-			assert.equal(balancePatron1.toNumber(), 10 * 10**18, "should be 10 because 1 token costs 0.1 ETH");
-		});
-	});
-
-	describe("isOneWeekPassed", () => {
-		it("should return true if this is the 1st episode", async() => {
-			const isOneWeekPassed = await devZenDaoTestable.isOneWeekPassed();
-			assert.isTrue(isOneWeekPassed, "should be true because this is the 1st episode");
-		});
-
-		it("should return true if 7 days have passed", async() => {
-			await devZenDaoTestable.moveToNextEpisode(false).should.be.fulfilled;
-			await increaseTime(60 * 60 * 24 * 7);
-			const isOneWeekPassed = await devZenDaoTestable.isOneWeekPassed();
-			assert.isTrue(isOneWeekPassed, "should be true because 1 week has passed");
-		});
-
-		it("should return false if 7 days have not passed", async() => {
-			await devZenDaoTestable.moveToNextEpisode(false).should.be.fulfilled;
-			const isOneWeekPassed = await devZenDaoTestable.isOneWeekPassed();
-			assert.isFalse(isOneWeekPassed, "should be false because 1 week has not passed");
 		});
 	});
 
