@@ -49,12 +49,21 @@ contract DevZenDao is DevZenDaoCore {
 	}
 
 	/**
-	 * @dev Guest did not appear -> penalize hime) 
+	 * @dev Guest did not appear -> penalize him) 
 	 * This method should require voting!
 	 * Notice: DevZen_selectNextHost is a custom action!
 	*/
 	function burnGuestStake() isCanDo("DevZen_burnGuestStake") public {
-		// TODO:
+		super._burnGuestStake();
+	}
+
+	/**
+	 * @dev Changes the guest in "legal" way
+	 * @param _guest New guest address
+	 * When guest is changed via this function we ensure that stake is returned to previous guest.
+	 */
+	function changeTheGuest(address _guest) isCanDo("DevZen_changeGuest") public {
+		super._changeTheGuest(_guest);
 	}
 
 	/**
@@ -69,11 +78,12 @@ contract DevZenDao is DevZenDaoCore {
 
 	/**
 	 * @dev Move to next episode
+	 * @param _guestHasCome Whether the guest(initual or emergency) has come to the show
 	 * Should be called right AFTER the recording of the current episode
 	 * Notice: DevZen_moveToNextExpisode is a custom action!
 	*/
-	function moveToNextEpisode() isCanDo("DevZen_moveToNextExpisode") public {
-		super._moveToNextEpisode();
+	function moveToNextEpisode(bool _guestHasCome) isCanDo("DevZen_moveToNextExpisode") public {
+		super._moveToNextEpisode(_guestHasCome);
 	}
 
 	// ------------------------------------------------------ 
@@ -85,6 +95,10 @@ contract DevZenDao is DevZenDaoCore {
 		super._runAdsInTheNextEpisode(_adText);
 	}
 
+	/**
+	 * @dev Become the next guest.
+	 * To become a guest sender should buy 5 DZT and approve dao to put them at stake. Sender will get back tokens after the show.
+	 */
 	function becomeTheNextShowGuest() public {
 		super._becomeTheNextShowGuest();
 	}

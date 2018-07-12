@@ -52,7 +52,14 @@ contract DevZenDaoTestable is DevZenDaoCore {
 	 * @dev Guest did not appear -> penalize him) 
 	*/
 	function burnGuestStake() public {
-		// TODO:
+		super._burnGuestStake();
+	}
+
+	/**
+	 * @dev Changes the guest in "legal" way
+	 */
+	function changeTheGuest(address _guest) public {
+		super._changeTheGuest(_guest);
 	}
 
 	/**
@@ -66,10 +73,11 @@ contract DevZenDaoTestable is DevZenDaoCore {
 
 	/**
 	 * @dev Move to next episode
+	 * @param _guestHasCome Whether the guest(initual or emergency) has come to the show
 	 * Should be called right AFTER the recording of the current episode
 	*/
-	function moveToNextEpisode() public {
-		super._moveToNextEpisode();
+	function moveToNextEpisode(bool _guestHasCome) public {
+		super._moveToNextEpisode(_guestHasCome);
 	}
 
 	// ------------------------------------------------------ 
@@ -81,6 +89,10 @@ contract DevZenDaoTestable is DevZenDaoCore {
 		super._runAdsInTheNextEpisode(_adText);
 	}
 
+	/**
+	 * @dev Become the next guest.
+	 * To become a guest sender should buy 5 DZT and approve dao to put them at stake. Sender will get back tokens after the show.
+	 */
 	function becomeTheNextShowGuest() public {
 		super._becomeTheNextShowGuest();
 	}
@@ -107,6 +119,17 @@ contract DevZenDaoTestable is DevZenDaoCore {
 	// do not allow to send ETH here. Instead use buyTokens method
 	function() {
 		revert();
+	}
+
+	//-----------------------------------------------
+	// These are helper methods for usage in contract
+	//-----------------------------------------------
+
+	/**
+	 * @dev Sets the guest for next show in "legal" way
+	 */
+	function setGuest(address _guest) public {
+		super._setGuest(_guest);
 	}
 
 }
