@@ -8,12 +8,13 @@ import "@thetta/core/contracts/DaoBaseAuto.sol";
 import "@thetta/core/contracts/tokens/StdDaoToken.sol";
 
 import "./DevZenDao.sol";
+import "./DevZenDaoCore.sol";
 
 contract DevZenDaoFactory {
 
 	DaoStorage store;
 
-	DevZenDao public dao;
+	DevZenDaoCore public dao;
 	DaoBaseAuto public aac;
 
 	constructor(address _boss, address[] _devZenTeam) public{
@@ -42,7 +43,7 @@ contract DevZenDaoFactory {
 		DevZenDao.Params memory defaultParams;
 		defaultParams.mintTokensPerWeekAmount = 10 * 10**18;
 		defaultParams.mintReputationTokensPerWeekAmount = 5 * 10**18;
-		defaultParams.oneAdSlotPrice = 2 * 10e18;
+		defaultParams.oneAdSlotPrice = 2 * 10**18;
 		// Current ETH price is ~$450. One token will be worth ~$45. One ad will cost ~$90 (2 tokens)
 		defaultParams.oneTokenPriceInWei = 0.1 * 10**18;
 		// To become a guest user should put 5 tokens at stake
@@ -51,7 +52,7 @@ contract DevZenDaoFactory {
 		defaultParams.repTokensReward_Guest = 1 * 10**18;
 		defaultParams.repTokensReward_TeamMembers = 2 * 10**18;
 
-		dao = new DevZenDao(devZenToken, repToken, store, defaultParams);
+		createNewContract(devZenToken, repToken, store, defaultParams);
 
 		store.allowActionByAddress(keccak256("manageGroups"),this);
 
@@ -65,6 +66,10 @@ contract DevZenDaoFactory {
 		// 3 - return 
 		dao.transferOwnership(msg.sender);
 		return dao;
+	}
+
+	function createNewContract(StdDaoToken _devZenToken, StdDaoToken _repToken, DaoStorage _store, DevZenDao.Params _defaultParams) internal {
+		dao = new DevZenDao(_devZenToken, _repToken, _store, _defaultParams);
 	}
 
 	function setPermissions(address _boss, address[] _devZenTeam) internal {
