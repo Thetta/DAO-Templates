@@ -10,5 +10,9 @@
 # Truffle build
 build/*
 
+# coverage
+coverage/*
+coverage.json
+
 # nodejs modules
 node_modules/*

@@ -31,4 +31,7 @@ npm install -g truffle@4.1.12
 
 # test
 npm run test
+
+# coverage via coveralls.io
+npm run coveralls
 ```
