@@ -12,6 +12,8 @@ contract("DevZenDaoCore", (accounts) => {
 	const guestAddr1 = accounts[4];
 	const guestAddr2 = accounts[5];
 	const guestAddr3 = accounts[6];
+	const teamMemberAddr1 = accounts[7];
+	const teamMemberAddr2 = accounts[8];
 
 	let devZenDaoFactoryTestable;
 	let devZenDaoTestable;
@@ -19,7 +21,7 @@ contract("DevZenDaoCore", (accounts) => {
 	let repToken;
 
 	beforeEach(async () => {
-		devZenDaoFactoryTestable = await DevZenDaoFactoryTestable.new();
+		devZenDaoFactoryTestable = await DevZenDaoFactoryTestable.new(hostAddr1, [teamMemberAddr1, teamMemberAddr2]);
 
 		const devZenDaoTestableAddr = await devZenDaoFactoryTestable.dao();
 		devZenDaoTestable = DevZenDaoTestable.at(devZenDaoTestableAddr);
