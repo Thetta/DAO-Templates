@@ -16,3 +16,6 @@ coverage.json
 
 # nodejs modules
 node_modules/*
+
+# env
+.env
