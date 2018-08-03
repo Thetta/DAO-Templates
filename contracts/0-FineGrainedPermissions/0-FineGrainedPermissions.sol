@@ -25,9 +25,9 @@ contract ExampleOfFineGrainedPerms is DaoClient {
 ////
 	constructor(IDaoBase _dao) public DaoClient(_dao){
 		// 1 - create tokens 
-		tokenGovernance = new StdDaoToken("YourDaoGovToken","GOV",18);
-		tokenReputation = new StdDaoToken("YourDaoRepToken","REP",18);
-		tokenReputationDev = new StdDaoToken("YourDaoRepDevToken","REPD",18);
+		tokenGovernance = new StdDaoToken("YourDaoGovToken","GOV",18, true, false, 10**25);
+		tokenReputation = new StdDaoToken("YourDaoRepToken","REP",18, true, true, 10**25);
+		tokenReputationDev = new StdDaoToken("YourDaoRepDevToken","REPD",18, true, false, 10**25);
 
 		// 2 - transfer ownership to the Dao
 		tokenGovernance.transferOwnership(dao);
