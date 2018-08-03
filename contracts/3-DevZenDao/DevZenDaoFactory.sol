@@ -7,8 +7,8 @@ import "@thetta/core/contracts/DaoBase.sol";
 import "@thetta/core/contracts/DaoBaseAuto.sol";
 import "@thetta/core/contracts/tokens/StdDaoToken.sol";
 
-import "./DevZenDao.sol";
 import "./DevZenDaoCore.sol";
+import "./DevZenDaoWithUnpackers.sol";
 
 contract DevZenDaoFactory {
 
@@ -40,7 +40,7 @@ contract DevZenDaoFactory {
 		// 2 tokens as reputation incentive for 1 host   
 		// 2 tokens as reputation incentive for 4 moderators
 		// 1 tokens as incentive for 1 guest
-		DevZenDao.Params memory defaultParams;
+		DevZenDaoWithUnpackers.Params memory defaultParams;
 		defaultParams.mintTokensPerWeekAmount = 10 * 10**18;
 		defaultParams.mintReputationTokensPerWeekAmount = 5 * 10**18;
 		defaultParams.oneAdSlotPrice = 2 * 10**18;
@@ -68,8 +68,8 @@ contract DevZenDaoFactory {
 		return dao;
 	}
 
-	function createNewContract(StdDaoToken _devZenToken, StdDaoToken _repToken, DaoStorage _store, DevZenDao.Params _defaultParams) internal {
-		dao = new DevZenDao(_devZenToken, _repToken, _store, _defaultParams);
+	function createNewContract(StdDaoToken _devZenToken, StdDaoToken _repToken, DaoStorage _store, DevZenDaoWithUnpackers.Params _defaultParams) internal {
+		dao = new DevZenDaoWithUnpackers(_devZenToken, _repToken, _store, _defaultParams);
 	}
 
 	function setPermissions(address _boss, address[] _devZenTeam) internal {
