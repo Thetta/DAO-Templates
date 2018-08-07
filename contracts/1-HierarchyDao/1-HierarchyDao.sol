@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.22;
 
 import "@thetta/core/contracts/DaoBase.sol";
 import "@thetta/core/contracts/DaoBaseAuto.sol";
@@ -6,7 +6,6 @@ import "@thetta/core/contracts/tokens/StdDaoToken.sol";
 
 contract HierarchyDao is DaoBaseWithUnpackers {
 	constructor(DaoStorage _store)public DaoBaseWithUnpackers(_store){
-
 	}
 }
 
@@ -27,7 +26,7 @@ contract HierarchyDaoFactory {
 		address[] _outsiders
 	) public {
 		createDao(_boss, _managers, _employees, _outsiders);
-		setupAac();
+		// setupAac();
 	}
 	
 	function createDao(
@@ -38,7 +37,7 @@ contract HierarchyDaoFactory {
 	) internal returns(address) {
 
 		// 1 - create
-		token = new StdDaoToken("StdToken", "STDT", 18);
+		token = new StdDaoToken("StdToken", "STDT", 18, true, false, 10**25);
 		tokens.push(address(token));
 		
 		store = new DaoStorage(tokens);
@@ -63,22 +62,22 @@ contract HierarchyDaoFactory {
 		dao.addGroupMember("Managers", _boss);
 		dao.addGroupMember("Employees", _boss);
 
-		dao.allowActionByAddress("issueTokens", _boss); 
-		dao.allowActionByAddress("upgradeDaoContract", _boss);
+		dao.allowActionByAddress(keccak256("issueTokens"), _boss); 
+		dao.allowActionByAddress(keccak256("upgradeDaoContract"), _boss);
 
 		// 2 - set managers group permission
-		dao.allowActionByAnyMemberOfGroup("addNewProposal", "Managers");
-		dao.allowActionByAnyMemberOfGroup("addNewTask", "Managers");
-		dao.allowActionByAnyMemberOfGroup("startTask", "Managers");
-		dao.allowActionByAnyMemberOfGroup("startBounty", "Managers");
+		dao.allowActionByAnyMemberOfGroup(keccak256("addNewProposal"), "Managers");
+		dao.allowActionByAnyMemberOfGroup(keccak256("addNewTask"), "Managers");
+		dao.allowActionByAnyMemberOfGroup(keccak256("startTask"), "Managers");
+		dao.allowActionByAnyMemberOfGroup(keccak256("startBounty"), "Managers");
 
 		// 3 - set employees group permissions
-		dao.allowActionByAnyMemberOfGroup("startTask", "Employees");
-		dao.allowActionByAnyMemberOfGroup("startBounty", "Employees");
+		dao.allowActionByAnyMemberOfGroup(keccak256("startTask"), "Employees");
+		dao.allowActionByAnyMemberOfGroup(keccak256("startBounty"), "Employees");
 
 		// 4 - the rest is by voting only (requires addNewProposal permission)
 		// so accessable by Managers only even with voting
-		dao.allowActionByVoting("manageGroups", token);
+		dao.allowActionByVoting(keccak256("manageGroups"), token);
 
 		// 5 - populate groups
 		uint i = 0;
@@ -91,7 +90,7 @@ contract HierarchyDaoFactory {
 
 	}
 
-	function setupAac() internal {
+	/*function setupAac() internal {
 
 		aac = new DaoBaseAuto(dao);
 
@@ -99,10 +98,10 @@ contract HierarchyDaoFactory {
 		uint8 VOTING_TYPE_1P1V = 1;
 		aac.setVotingParams("manageGroups", VOTING_TYPE_1P1V, bytes32(0), "Managers", bytes32(50), bytes32(50), 0);
 
-		dao.allowActionByAddress("addNewProposal", aac);
-		dao.allowActionByAddress("manageGroups", aac);
+		dao.allowActionByAddress(keccak256("addNewProposal"), aac);
+		dao.allowActionByAddress(keccak256("manageGroups"), aac);
 
 		aac.transferOwnership(msg.sender);
-	}
+	}*/
 	
 }
