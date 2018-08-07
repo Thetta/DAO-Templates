@@ -77,11 +77,9 @@ contract DevZenDaoCore is DaoBase {
 		repToken = _repToken;
 		params = _params;
 	}
-
 	// --------------------------------------------- 
 	// These methods should be called by DevZen team:
 	//----------------------------------------------
-
 	/**
 	 * @dev Change the DAO parameters
 	*/
@@ -104,10 +102,8 @@ contract DevZenDaoCore is DaoBase {
 	*/
 	function _selectNextHost(address _nextHost) internal onlyOwner {
 		//emit DevZenDaoCore_SelectNextHost(_nextHost);
-
 		// 1 - check if host is still not selected
 		require(0x0==nextEpisode.nextShowHost);
-
 		// 2 - select next host
 		nextEpisode.nextShowHost = _nextHost;
 	}
@@ -163,16 +159,13 @@ contract DevZenDaoCore is DaoBase {
 	*/
 	function _moveToNextEpisode(bool _guestHasCome) internal onlyOwner {
 		//emit DevZenDaoCore_MoveToNextEpisode(_guestHasCome);
-
 		// 1 - check if 1 week is passed
 		require(_isOneWeekPassed());
-
 		// 2 - mint tokens 
 		// We are minting X tokens to this address (to the DevZen DAO contract itself)
 		// Current contract is the owner of the devZenToken contract, so it can do anything with it (mint/burn tokens)
 		devZenToken.mintFor(address(this), params.mintTokensPerWeekAmount);
 		repToken.mintFor(address(this), params.mintReputationTokensPerWeekAmount);
-
 		// 3 - clear next host and next guest
 		nextEpisode.prevShowHost = nextEpisode.nextShowHost;
 		nextEpisode.prevShowGuest = nextEpisode.nextShowGuest;
@@ -180,17 +173,13 @@ contract DevZenDaoCore is DaoBase {
 		nextEpisode.nextShowGuest = 0x0;
 		nextEpisode.usedSlots = 0;
 		nextEpisode.createdAt = now;
-
 		// 4 - mint DZTREP tokens to the Guest 
 		if(_guestHasCome) {
 			repToken.mintFor(nextEpisode.prevShowGuest, params.repTokensReward_Guest);
 		}
-
 		// 5 - mint some reputation tokens to the Host 
 		repToken.mintFor(nextEpisode.prevShowHost, params.repTokensReward_Host);
-
 		// TODO:
-		
 		// 6 - mint some reputation tokens to the rest of the DevZen team!
 		uint teamMembers = getMembersCount("DevZenTeam");
 		assert(teamMembers>=1);
@@ -198,7 +187,6 @@ contract DevZenDaoCore is DaoBase {
 		for(uint i=0; i<teamMembers; ++i){
 			// TODO: use daoBase.getMemberByIndex() method when it will be implemented!
 			address member = 0x0;
-
 			if(member!=nextEpisode.prevShowHost){
 				repToken.mintFor(member, perMember);
 			}
@@ -228,16 +216,12 @@ contract DevZenDaoCore is DaoBase {
 	// Any patron (DevZen token holder) can use DevZen tokens to run ads: Burn k tokens to add your add into the slot (linear, no priority).
 	function _runAdsInTheNextEpisode(string _adText) internal onlyOwner {
 		//emit DevZenDaoCore_RunAdsInTheNextEpisode(_adText);
-
 		// 0 - check if we have available slot 
 		require(nextEpisode.usedSlots<5);
-
 		// 1 - check if msg.sender has oneAdSlotPrice tokens 
 		require(devZenToken.balanceOf(msg.sender)!=0); 
-
 		// 2 - burn his oneAdSlotPrice tokens 
 		devZenToken.burnFor(msg.sender, params.oneAdSlotPrice);
-
 		// 3 - add ad to the slot 
 		nextEpisode.adSlots.push(_adText);
 		nextEpisode.usedSlots++;
@@ -249,10 +233,8 @@ contract DevZenDaoCore is DaoBase {
 	 */
 	function _becomeTheNextShowGuest() internal {
 		//emit DevZenDaoCore_BecomeTheNextShowGuest();
-
 		// 0 - check if guest is still not selected
 		require(0x0 == nextEpisode.nextShowGuest);
-
 		// 1 - set the sender as the new guest
 		_setGuest(msg.sender);
 	}
@@ -266,15 +248,11 @@ contract DevZenDaoCore is DaoBase {
     */
 	function _buyTokens() public payable {
 		//emit DevZenDaoCore_BuyTokens();
-
-		require(msg.value != 0);
-		
+		require(msg.value != 0);		
 		// 1 - calculate how many tokens msg.sender wants to buy (use oneTokenPriceInWei)
 		uint tokensToPurchase = (msg.value / params.oneTokenPriceInWei) * 10**18;
-
 		// 2 - check if this address holds enough tokens
 		require(devZenToken.balanceOf(address(this)) >= tokensToPurchase);
-
 		// 3 - if ok -> transfer tokens to the msg.sender
 		devZenToken.transfer(msg.sender, tokensToPurchase);
 	}
@@ -285,10 +263,8 @@ contract DevZenDaoCore is DaoBase {
 	 */
 	function _isOneWeekPassed() internal view onlyOwner returns(bool) {
 		//emit DevZenDaoCore_IsOneWeekPassed();
-
 		// return true if this is the 1st episode
 		if(nextEpisode.createdAt == 0) return true;
-
 		return nextEpisode.createdAt + 7 days <= now;
 	}
 
@@ -300,7 +276,6 @@ contract DevZenDaoCore is DaoBase {
 	//-----------------------------------------------
 	// These are helper methods for usage in contract
 	//-----------------------------------------------
-
 	/**
 	 * @dev Sets the guest for next show in "legal" way
 	 * @param _guest New guest address
@@ -317,5 +292,4 @@ contract DevZenDaoCore is DaoBase {
 		// 4 - select next guest
 		nextEpisode.nextShowGuest = _guest;
 	}
-
 }

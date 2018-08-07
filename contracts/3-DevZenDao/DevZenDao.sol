@@ -53,7 +53,7 @@ contract DevZenDao is DevZenDaoCore {
 	 * This method should require voting!
 	 * Notice: DevZen_selectNextHost is a custom action!
 	*/
-	function burnGuestStake() public {//isCanDo("DevZen_burnGuestStake") 
+	function burnGuestStake() public isCanDo("DevZen_burnGuestStake") {
 		super._burnGuestStake();
 	}
 

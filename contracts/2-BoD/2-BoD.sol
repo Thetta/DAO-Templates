@@ -22,7 +22,7 @@ contract BodDaoFactory {
 	function createDao(address _creator, address[] _directors, address[] _employees) internal returns (address) {
 
 		// 1 - create
-		token = new StdDaoToken("StdToken", "STDT", 18, true, true, 10**9);
+		token = new StdDaoToken("StdToken", "STDT", 18, true, true, 10**25);
 		tokens.push(address(token));
 		store = new DaoStorage(tokens);
 		daoBase = new DaoBaseWithUnpackers(store);
