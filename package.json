@@ -19,7 +19,7 @@
 	},
 	"homepage": "https://web.thetta.io",
 	"dependencies": {
-		"@thetta/core": "^1.3.3",
+		"@thetta/core": "git://github.com/Thetta/Thetta-DAO-Framework.git#dev2-enkogu-libs-daobase",
 		"babel-eslint": "^8.2.3",
 		"babel-polyfill": "^6.26.0",
 		"babel-register": "^6.26.0",

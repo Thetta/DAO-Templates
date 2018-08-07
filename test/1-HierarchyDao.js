@@ -2,7 +2,7 @@ const CheckExceptions = require("./utils/checkexceptions");
 const should = require("./utils/helpers");
 
 const DaoBaseAuto = artifacts.require("DaoBaseAuto");
-const DaoStorage = artifacts.require("DaoStorage");
+// const DaoStorage = artifacts.require("DaoStorage");
 const GenericProposal = artifacts.require("GenericProposal");
 const HierarchyDao = artifacts.require("HierarchyDao");
 const HierarchyDaoFactory = artifacts.require("HierarchyDaoFactory");
@@ -20,7 +20,7 @@ contract('HierarchyDaoFactory', (accounts) => {
 
 	let hierarchyDaoFactory;
 	let hierarchyDao; // inherits from DaoBaseWithUnpackers
-	let store;
+	// let store;
 	let aac;
 	let informalProposal;
 	let stdDaoToken;
@@ -31,8 +31,8 @@ contract('HierarchyDaoFactory', (accounts) => {
 		const hierarchyDaoAddress = await hierarchyDaoFactory.dao();
 		hierarchyDao = HierarchyDao.at(hierarchyDaoAddress);
 
-		const storeAddress = await hierarchyDao.store();
-		store = DaoStorage.at(storeAddress);
+		// const storeAddress = await hierarchyDao.store();
+		// store = DaoStorage.at(storeAddress);
 
 		// const aacAddress = await hierarchyDaoFactory.aac();
 		// aac = DaoBaseAuto.at(aacAddress);
@@ -41,11 +41,13 @@ contract('HierarchyDaoFactory', (accounts) => {
 		stdDaoToken = StdDaoToken.at(stdDaoTokenAddress);
 
 		informalProposal = await InformalProposal.new("ANY_TEXT");
+		await hierarchyDao.easyEditOff();
+
 	});
 
 	it("boss should be a member of 2 groups: managers and employees", async () => {
-		const isManager = await store.isGroupMember(web3.sha3("Managers"), boss);
-		const isEmployee = await store.isGroupMember(web3.sha3("Employees"), boss);
+		const isManager = await hierarchyDao.isGroupMember("Managers", boss);
+		const isEmployee = await hierarchyDao.isGroupMember("Employees", boss);
 
 		assert.isTrue(isManager, "boss should be in the managers group");
 		assert.isTrue(isEmployee, "boss should be in the employees group");

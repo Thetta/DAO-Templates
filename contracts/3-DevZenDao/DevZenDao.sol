@@ -11,11 +11,9 @@ import "./DevZenDaoCore.sol";
 contract DevZenDao is DevZenDaoCore {
 
 	constructor(
-		StdDaoToken _devZenToken, 
-		StdDaoToken _repToken, 
-		DaoStorage _store, 
+		address[] _tokens, 
 		Params _params
-	) public DevZenDaoCore(_devZenToken, _repToken, _store, _params) {}
+	) public DevZenDaoCore(_tokens, _params) {}
 
 	// --------------------------------------------- 
 	// These methods should be called by DevZen team:

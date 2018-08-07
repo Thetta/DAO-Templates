@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 
 import "@thetta/core/contracts/DaoBase.sol";
 import "@thetta/core/contracts/tokens/StdDaoToken.sol";
-
 /**
  * @title DevZenDaoCore
  * @dev This is the DAO for russian most famous "for hard-core developers only" podcast. 
@@ -31,7 +30,12 @@ import "@thetta/core/contracts/tokens/StdDaoToken.sol";
  *		2 tokens as reputation incentive for 4 moderators
  *		1 tokens as incentive for 1 guest
 */
-contract DevZenDaoCore is DaoBase {
+contract DevZenDaoCore is DaoBase {	
+	StdDaoToken public devZenToken;
+	StdDaoToken public repToken;
+	Params public params;
+	NextEpisode public nextEpisode;
+
 	event DevZenDaoCore_WithdrawEther(address _output);
 	event DevZenDaoCore_SelectNextHost(address _nextHost);
 	event DevZenDaoCore_ChangeTheGuest(address _guest);
@@ -67,14 +71,14 @@ contract DevZenDaoCore is DaoBase {
 		bool isEmergencyGuest;
 	}
 
-	StdDaoToken public devZenToken;
-	StdDaoToken public repToken;
-	Params public params;
-	NextEpisode public nextEpisode;
+	modifier isCanDo(bytes32 _what){
+		require(isCanDoAction(msg.sender, _what)); 
+		_; 
+	}
 
-	constructor(StdDaoToken _devZenToken, StdDaoToken _repToken, DaoStorage _store, Params _params) public DaoBase(_store){
-		devZenToken = _devZenToken;
-		repToken = _repToken;
+	constructor(address[] _tokens, Params _params) public DaoBase(_tokens){
+		devZenToken = StdDaoToken(_tokens[0]);
+		repToken = StdDaoToken(_tokens[1]);
 		params = _params;
 	}
 	// --------------------------------------------- 
@@ -191,8 +195,6 @@ contract DevZenDaoCore is DaoBase {
 				repToken.mintFor(member, perMember);
 			}
 		}
-		
-
 		// 7 - recovering guests's stake
 		if(_guestHasCome && !nextEpisode.isEmergencyGuest) {
 			// if initial guest has come to the show then transfer DZT back
@@ -203,10 +205,8 @@ contract DevZenDaoCore is DaoBase {
 				_burnGuestStake();
 			}
 		}
-
 		// 8 - clear guest's emergency
-		nextEpisode.isEmergencyGuest = false;
-		
+		nextEpisode.isEmergencyGuest = false;	
 	}
 
 	// ------------------------------------------------------ 

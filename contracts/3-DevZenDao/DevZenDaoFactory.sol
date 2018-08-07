@@ -11,9 +11,6 @@ import "./DevZenDao.sol";
 import "./DevZenDaoCore.sol";
 
 contract DevZenDaoFactory {
-
-	DaoStorage store;
-
 	DevZenDaoCore public dao;
 	// DaoBaseAuto public aac;
 
@@ -27,10 +24,8 @@ contract DevZenDaoFactory {
 		StdDaoToken repToken = new StdDaoToken("DevZenRepToken", "DZTREP", 18, true, true, 10**25);
 
 		address[] tokens;
-		tokens.push(devZenToken);
-		tokens.push(repToken);
-
-		store = new DaoStorage(tokens);
+		tokens.push(address(devZenToken));
+		tokens.push(address(repToken));
 
 		// DevZen tokens:
 		// 10 tokens for 5 ads slots
@@ -51,14 +46,13 @@ contract DevZenDaoFactory {
 		defaultParams.repTokensReward_Host = 2 * 10**18;
 		defaultParams.repTokensReward_Guest = 1 * 10**18;
 		defaultParams.repTokensReward_TeamMembers = 2 * 10**18;
+		
+		createNewContract(tokens, defaultParams);
 
-		createNewContract(devZenToken, repToken, store, defaultParams);
-
-		store.allowActionByAddress(keccak256("manageGroups"),this);
+		dao.allowActionByAddress(keccak256("manageGroups"),this);
 
 		devZenToken.transferOwnership(dao);
 		repToken.transferOwnership(dao);
-		store.transferOwnership(dao);
 
 		// 2 - setup
 		setPermissions(_boss, _devZenTeam);
@@ -68,8 +62,8 @@ contract DevZenDaoFactory {
 		return dao;
 	}
 
-	function createNewContract(StdDaoToken _devZenToken, StdDaoToken _repToken, DaoStorage _store, DevZenDao.Params _defaultParams) internal {
-		dao = new DevZenDao(_devZenToken, _repToken, _store, _defaultParams);
+	function createNewContract(address[] _tokens, DevZenDao.Params _defaultParams) internal {
+		dao = new DevZenDao(_tokens, _defaultParams);
 	}
 
 	function setPermissions(address _boss, address[] _devZenTeam) internal {
