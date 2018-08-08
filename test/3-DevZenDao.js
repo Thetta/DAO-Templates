@@ -31,6 +31,7 @@ contract("DevZenDaoCore", (accounts) => {
 
 		const repTokenAddr = await devZenDaoTestable.repToken();
 		repToken = StdDaoToken.at(repTokenAddr);
+		await devZenDaoTestable.easyEditOff();
 	});
 
 	describe("withdrawEther", () => {

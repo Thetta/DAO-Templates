@@ -1,18 +1,18 @@
 pragma solidity ^0.4.22;
 
 import "@thetta/core/contracts/DaoBase.sol";
+import "@thetta/core/contracts/DaoBaseWithUnpackers.sol";
 import "@thetta/core/contracts/DaoBaseAuto.sol";
 import "@thetta/core/contracts/tokens/StdDaoToken.sol";
 
 contract HierarchyDao is DaoBaseWithUnpackers {
-	constructor(DaoStorage _store)public DaoBaseWithUnpackers(_store){
+	constructor(address[] _tokens)public DaoBaseWithUnpackers(_tokens){
 	}
 }
 
 contract HierarchyDaoFactory {
 
 	StdDaoToken public token;
-	DaoStorage store;
 
 	HierarchyDao public dao;
 	DaoBaseAuto public aac;
@@ -40,13 +40,11 @@ contract HierarchyDaoFactory {
 		token = new StdDaoToken("StdToken", "STDT", 18, true, false, 10**25);
 		tokens.push(address(token));
 		
-		store = new DaoStorage(tokens);
-		dao = new HierarchyDao(store);
+		dao = new HierarchyDao(tokens);
 
-		store.allowActionByAddress(keccak256("manageGroups"), address(this));
+		dao.allowActionByAddress(keccak256("manageGroups"), address(this));
 
 		token.transferOwnership(dao);
-		store.transferOwnership(dao);
 
 		// 2 - setup
 		setPermissions(_boss, _managers, _employees);

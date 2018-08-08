@@ -16,12 +16,8 @@ import "./DevZenDaoCore.sol";
  */
 contract DevZenDaoTestable is DevZenDaoCore {
 
-	constructor(
-		StdDaoToken _devZenToken, 
-		StdDaoToken _repToken, 
-		DaoStorage _store, 
-		Params _params
-	) public DevZenDaoCore(_devZenToken, _repToken, _store, _params) {}
+	constructor(address[] _tokens, Params _params) public 
+		DevZenDaoCore(_tokens, _params) {}
 
 	// --------------------------------------------- 
 	// These methods should be called by DevZen team:

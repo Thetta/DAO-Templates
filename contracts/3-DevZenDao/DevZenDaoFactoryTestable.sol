@@ -10,8 +10,8 @@ contract DevZenDaoFactoryTestable is DevZenDaoFactory {
 
 	constructor(address _boss, address[] _devZenTeam) DevZenDaoFactory(_boss, _devZenTeam) public {}
 
-	function createNewContract(StdDaoToken _devZenToken, StdDaoToken _repToken, DaoStorage _store, DevZenDao.Params _defaultParams) internal {
-		dao = new DevZenDaoTestable(_devZenToken, _repToken, _store, _defaultParams);
+	function createNewContract(address[] _tokens, DevZenDao.Params _defaultParams) internal {
+		dao = new DevZenDaoTestable(_tokens, _defaultParams);
 	}
 
 }
