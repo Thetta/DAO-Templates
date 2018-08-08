@@ -87,7 +87,6 @@ contract DevZenDao is DevZenDaoCore {
 	// ------------------------------------------------------ 
 	// These methods should be called by DevZen token holders
 	// ------------------------------------------------------
-
 	// Any patron (DevZen token holder) can use DevZen tokens to run ads: Burn k tokens to add your add into the slot (linear, no priority).
 	function runAdsInTheNextEpisode(string _adText) public {
 		super._runAdsInTheNextEpisode(_adText);
@@ -125,4 +124,11 @@ contract DevZenDao is DevZenDaoCore {
 		revert();
 	}
 
+	function updateDaoParamsGeneric(bytes32[] )
+	function withdrawEtherGeneric(bytes32[] )
+	function selectNextHostGeneric(bytes32[] )
+	function changeGuestGeneric(bytes32[] )
+	function emergencyChangeGuestGeneric(bytes32[] )
+	function moveToNextExpisodeGeneric(bytes32[] )
+	function burnGuestStakeGeneric(bytes32[] )
 }
