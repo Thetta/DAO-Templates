@@ -188,9 +188,9 @@ contract DevZenDaoCore is DaoBase {
 		uint teamMembers = getMembersCount("DevZenTeam");
 		assert(teamMembers>=1);
 		uint perMember = params.repTokensReward_TeamMembers / (teamMembers - 1); 
+		address member;
 		for(uint i=0; i<teamMembers; ++i){
-			// TODO: use daoBase.getMemberByIndex() method when it will be implemented!
-			address member = 0x0;
+			member = getMemberByIndex("DevZenTeam", i);
 			if(member!=nextEpisode.prevShowHost){
 				repToken.mintFor(member, perMember);
 			}
