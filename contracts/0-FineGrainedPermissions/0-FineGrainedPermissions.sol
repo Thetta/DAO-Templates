@@ -1,4 +1,4 @@
-pragma solidity ^0.4.22;
+pragma solidity ^0.4.24;
 
 import "@thetta/core/contracts/tokens/StdDaoToken.sol";
 import "@thetta/core/contracts/IDaoBase.sol";

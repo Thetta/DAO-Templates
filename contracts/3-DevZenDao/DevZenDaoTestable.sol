@@ -1,5 +1,5 @@
 
-pragma solidity ^0.4.22;
+pragma solidity ^0.4.24;
 
 // to enable Params passing to constructor and method
 pragma experimental ABIEncoderV2;

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.22;
+pragma solidity ^0.4.24;
 pragma experimental ABIEncoderV2;
 
 import "@thetta/core/contracts/utils/UtilsLib.sol";

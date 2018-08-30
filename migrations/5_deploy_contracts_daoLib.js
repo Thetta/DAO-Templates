@@ -6,6 +6,8 @@ var HierarchyDaoFactory = artifacts.require("./HierarchyDaoFactory");
 var DevZenDaoFactory = artifacts.require("./DevZenDaoFactory");
 var DevZenDaoFactoryTestable = artifacts.require("./DevZenDaoFactoryTestable");
 var DevZenDaoTestable = artifacts.require("./DevZenDaoTestable");
+var DevZenDaoWithUnpackers = artifacts.require("./DevZenDaoWithUnpackers");
+var DevZenDaoWithUnpackersTestable = artifacts.require("./DevZenDaoWithUnpackersTestable");
 
 module.exports = function (deployer) {
 	deployer.deploy(DaoBaseLib).then(() => {
@@ -16,6 +18,9 @@ module.exports = function (deployer) {
 		deployer.link(DaoBaseLib, DevZenDaoFactory);
 
 		deployer.link(DaoBaseLib, DevZenDaoFactoryTestable);
+		deployer.link(DaoBaseLib, DevZenDaoWithUnpackers);
+		deployer.link(DaoBaseLib, DevZenDaoWithUnpackersTestable);
+		
 		deployer.link(DaoBaseLib, DevZenDaoTestable);		
 	});
 };

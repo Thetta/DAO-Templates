@@ -26,7 +26,7 @@ contract("DevZenDaoCore", (accounts) => {
 	beforeEach(async () => {
 		devZenDaoFactory = await DevZenDaoFactoryTestable.new(hostAddr1, [teamMemberAddr1, teamMemberAddr2], {gas:1e13, gasPrice:0});
 
-		const devZenDaoAddr = await devZenDaoFactory.dao();
+		const devZenDaoAddr = await devZenDaoFactory.devZenDao();
 		devZenDao = DevZenDaoTestable.at(devZenDaoAddr);
 
 		const devZenTokenAddr = await devZenDao.devZenToken();
@@ -40,31 +40,31 @@ contract("DevZenDaoCore", (accounts) => {
 		it("should withdraw ether to specified address", async() => {
 			await devZenDao.moveToNextEpisode(false).should.be.fulfilled;
 
-			// const initialBalance = web3.eth.getBalance(patronAddr1);
-			// const value = web3.toWei(1, "ether");
-			// await devZenDao.buyTokens({ value: value, from: patronAddr1 }).should.be.fulfilled;
+			const initialBalance = web3.eth.getBalance(patronAddr1);
+			const value = web3.toWei(1, "ether");
+			await devZenDao.buyTokens({ value: value, from: patronAddr1 }).should.be.fulfilled;
 
-			// const balanceAfterTokensBought = web3.eth.getBalance(patronAddr1);
-			// assert.isTrue(initialBalance.toNumber() - balanceAfterTokensBought.toNumber() > value, 'patron should spend 1 ETH on tokens');
+			const balanceAfterTokensBought = web3.eth.getBalance(patronAddr1);
+			assert.isTrue(initialBalance.toNumber() - balanceAfterTokensBought.toNumber() > value, 'patron should spend 1 ETH on tokens');
 
-			// await devZenDao.withdrawEther(patronAddr1).should.be.fulfilled;
+			await devZenDao.withdrawEther(patronAddr1).should.be.fulfilled;
 
-			// const balanceAfterWithdraw = web3.eth.getBalance(patronAddr1);
-			// assert.isTrue(balanceAfterWithdraw.toNumber() > balanceAfterTokensBought.toNumber(), '1 ETH should be withdrawn to patron');
+			const balanceAfterWithdraw = web3.eth.getBalance(patronAddr1);
+			assert.isTrue(balanceAfterWithdraw.toNumber() > balanceAfterTokensBought.toNumber(), '1 ETH should be withdrawn to patron');
 		});
 	});
 
 	describe("selectNextHost", () => {
 		it("should set next episode's host if it is not yet selected", async() => {
 			await devZenDao.selectNextHost(hostAddr1).should.be.fulfilled;
-			// const nextEpisode = await devZenDao.nextEpisode();
-			// const nextShowHostIndex = 0;
-			// assert.equal(nextEpisode[nextShowHostIndex], hostAddr1);
+			const nextEpisode = await devZenDao.nextEpisode();
+			const nextShowHostIndex = 0;
+			assert.equal(nextEpisode[nextShowHostIndex], hostAddr1);
 		});
 
 		it("should should throw if next episode's host is already selected", async() => {
 			await devZenDao.selectNextHost(hostAddr1).should.be.fulfilled;
-			// await devZenDao.selectNextHost(hostAddr2).should.be.rejectedWith("revert");
+			await devZenDao.selectNextHost(hostAddr2).should.be.rejectedWith("revert");
 		});
 	});
 

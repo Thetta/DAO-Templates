@@ -15,6 +15,8 @@ var HierarchyDaoFactory = artifacts.require("./HierarchyDaoFactory");
 var DevZenDaoFactory = artifacts.require("./DevZenDaoFactory");
 var DevZenDaoFactoryTestable = artifacts.require("./DevZenDaoFactoryTestable");
 var DevZenDaoTestable = artifacts.require("./DevZenDaoTestable");
+var DevZenDaoWithUnpackersTestable = artifacts.require("./DevZenDaoWithUnpackersTestable");
+var DevZenDaoWithUnpackers = artifacts.require("./DevZenDaoWithUnpackers");
 
 module.exports = function (deployer) {
 	deployer.deploy(UtilsLib).then(() => {
@@ -28,6 +30,8 @@ module.exports = function (deployer) {
 		deployer.link(UtilsLib, HierarchyDaoFactory);
 		deployer.link(UtilsLib, DevZenDaoFactoryTestable);
 		deployer.link(UtilsLib, DevZenDaoTestable);
+		deployer.link(UtilsLib, DevZenDaoWithUnpackersTestable);
+		deployer.link(UtilsLib, DevZenDaoWithUnpackers);
 
 	});
 };
