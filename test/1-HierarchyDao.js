@@ -2,7 +2,7 @@ const CheckExceptions = require("./utils/checkexceptions");
 const should = require("./utils/helpers");
 
 const DaoBaseAuto = artifacts.require("DaoBaseAuto");
-// const DaoStorage = artifacts.require("DaoStorage");
+const DaoStorage = artifacts.require("DaoStorage");
 const GenericProposal = artifacts.require("GenericProposal");
 const HierarchyDao = artifacts.require("HierarchyDao");
 const HierarchyDaoFactory = artifacts.require("HierarchyDaoFactory");

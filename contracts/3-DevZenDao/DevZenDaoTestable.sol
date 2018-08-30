@@ -1,9 +1,11 @@
+
 pragma solidity ^0.4.22;
 
 // to enable Params passing to constructor and method
 pragma experimental ABIEncoderV2;
 
 import "@thetta/core/contracts/DaoBase.sol";
+import "@thetta/core/contracts/IDaoBase.sol";
 import "@thetta/core/contracts/tokens/StdDaoToken.sol";
 
 import "./DevZenDaoCore.sol";
@@ -16,8 +18,8 @@ import "./DevZenDaoCore.sol";
  */
 contract DevZenDaoTestable is DevZenDaoCore {
 
-	constructor(address[] _tokens, Params _params) public 
-		DevZenDaoCore(_tokens, _params) {}
+	constructor(IDaoBase _daoBase, address[] _tokens, Params _params) public 
+		DevZenDaoCore(_daoBase, _tokens, _params) {}
 
 	// --------------------------------------------- 
 	// These methods should be called by DevZen team:

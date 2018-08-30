@@ -3,13 +3,15 @@ pragma solidity ^0.4.22;
 import "@thetta/core/contracts/DaoBase.sol";
 import "@thetta/core/contracts/DaoBaseWithUnpackers.sol";
 import "@thetta/core/contracts/DaoBaseAuto.sol";
+import "@thetta/core/contracts/DaoStorage.sol";
 import "@thetta/core/contracts/tokens/StdDaoToken.sol";
-import "@thetta/core/contracts/tasks/Tasks.sol";
+// import "@thetta/core/contracts/tasks/Tasks.sol";
 
 contract BodDaoFactory {
 
 	DaoBaseWithUnpackers public daoBase;
 	DaoBaseAuto public aac;
+	DaoStorage store;
 	StdDaoToken public token;
 
 	address[] tokens;
@@ -24,7 +26,8 @@ contract BodDaoFactory {
 		// 1 - create
 		token = new StdDaoToken("StdToken", "STDT", 18, true, true, 10**25);
 		tokens.push(address(token));
-		daoBase = new DaoBaseWithUnpackers(tokens);
+		store = new DaoStorage(tokens);
+		daoBase = new DaoBaseWithUnpackers(store);
 
 		daoBase.allowActionByAddress(keccak256("manageGroups"), this);
 

@@ -4,6 +4,7 @@ pragma solidity ^0.4.22;
 pragma experimental ABIEncoderV2;
 
 import "@thetta/core/contracts/DaoBase.sol";
+import "@thetta/core/contracts/IDaoBase.sol";
 import "@thetta/core/contracts/tokens/StdDaoToken.sol";
 
 import "./DevZenDaoCore.sol";
@@ -11,9 +12,10 @@ import "./DevZenDaoCore.sol";
 contract DevZenDao is DevZenDaoCore {
 
 	constructor(
+		IDaoBase _daoBase,
 		address[] _tokens, 
 		Params _params
-	) public DevZenDaoCore(_tokens, _params) {}
+	) public DevZenDaoCore(_daoBase, _tokens, _params) {}
 
 	// --------------------------------------------- 
 	// These methods should be called by DevZen team:
@@ -123,12 +125,4 @@ contract DevZenDao is DevZenDaoCore {
 	function() {
 		revert();
 	}
-
-	function updateDaoParamsGeneric(bytes32[] )
-	function withdrawEtherGeneric(bytes32[] )
-	function selectNextHostGeneric(bytes32[] )
-	function changeGuestGeneric(bytes32[] )
-	function emergencyChangeGuestGeneric(bytes32[] )
-	function moveToNextExpisodeGeneric(bytes32[] )
-	function burnGuestStakeGeneric(bytes32[] )
 }

@@ -4,14 +4,16 @@ import "@thetta/core/contracts/DaoBase.sol";
 import "@thetta/core/contracts/DaoBaseWithUnpackers.sol";
 import "@thetta/core/contracts/DaoBaseAuto.sol";
 import "@thetta/core/contracts/tokens/StdDaoToken.sol";
+import "@thetta/core/contracts/IDaoBase.sol";
+import "@thetta/core/contracts/DaoStorage.sol";
 
 contract HierarchyDao is DaoBaseWithUnpackers {
-	constructor(address[] _tokens)public DaoBaseWithUnpackers(_tokens){
+	constructor(DaoStorage _store)public DaoBaseWithUnpackers(_store){
 	}
 }
 
 contract HierarchyDaoFactory {
-
+	DaoStorage store;
 	StdDaoToken public token;
 
 	HierarchyDao public dao;
@@ -39,8 +41,8 @@ contract HierarchyDaoFactory {
 		// 1 - create
 		token = new StdDaoToken("StdToken", "STDT", 18, true, false, 10**25);
 		tokens.push(address(token));
-		
-		dao = new HierarchyDao(tokens);
+		store = new DaoStorage(tokens);
+		dao = new HierarchyDao(store);
 
 		dao.allowActionByAddress(keccak256("manageGroups"), address(this));
 
