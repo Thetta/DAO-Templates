@@ -1,10 +1,10 @@
-const CheckExceptions = require("./utils/checkexceptions");
+/*const CheckExceptions = require("./utils/checkexceptions");
 const should = require("./utils/helpers");
 
 const BodDaoFactory = artifacts.require("BodDaoFactory");
 const DaoBaseAuto = artifacts.require("DaoBaseAuto");
 const DaoBaseWithUnpackers = artifacts.require("DaoBaseWithUnpackers");
-const DaoStorage = artifacts.require("DaoStorage");
+// const DaoStorage = artifacts.require("DaoStorage");
 const GenericProposal = artifacts.require("GenericProposal");
 const InformalProposal = artifacts.require("InformalProposal");
 const Voting = artifacts.require("Voting");
@@ -20,7 +20,7 @@ contract("BodDaoFactory", (accounts) => {
 	const employee2 = accounts[5];
 
 	var bodDaoFactory;
-	let store;
+	// let store;
 	let daoBase;
 	let aac;
 	let informalProposal;
@@ -35,8 +35,6 @@ contract("BodDaoFactory", (accounts) => {
 		bodDaoFactory = await BodDaoFactory.new(creator, [director1, director2, director3], [employee1, employee2], {gasPrice:0, gas:1e13});
 		const daoBaseAddress = await bodDaoFactory.daoBase();
 		daoBase = DaoBaseWithUnpackers.at(daoBaseAddress);
-
-		const storeAddress = await bodDaoFactory.store();
-		store = DaoStorage.at(storeAddress);
 	});
 });
+*/

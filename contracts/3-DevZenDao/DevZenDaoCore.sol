@@ -1,11 +1,13 @@
-pragma solidity ^0.4.22;
+pragma solidity ^0.4.24;
 
 // to enable Params passing to constructor and method
 pragma experimental ABIEncoderV2;
 
 import "@thetta/core/contracts/DaoBase.sol";
+import "@thetta/core/contracts/DaoClient.sol";
+import "@thetta/core/contracts/DaoStorage.sol";
 import "@thetta/core/contracts/tokens/StdDaoToken.sol";
-
+import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 /**
  * @title DevZenDaoCore
  * @dev This is the DAO for russian most famous "for hard-core developers only" podcast. 
@@ -31,7 +33,21 @@ import "@thetta/core/contracts/tokens/StdDaoToken.sol";
  *		2 tokens as reputation incentive for 4 moderators
  *		1 tokens as incentive for 1 guest
 */
-contract DevZenDaoCore is DaoBase {
+contract DevZenDaoCore is DaoClient {	
+	StdDaoToken public devZenToken;
+	StdDaoToken public repToken;
+	Params public params;
+	NextEpisode public nextEpisode;
+	IDaoBase daoBase;
+
+	bytes32 public constant DEV_ZEN_UPDATE_DAO_PARAMS = keccak256("DevZen_updateDaoParams");
+	bytes32 public constant DEV_ZEN_WITHDRAW_ETHER = keccak256("DevZen_withdrawEther");
+	bytes32 public constant DEV_ZEN_SELECT_NEXT_HOST = keccak256("DevZen_selectNextHost");
+	bytes32 public constant DEV_ZEN_BURN_GUEST_STAKE = keccak256("DevZen_burnGuestStake");
+	bytes32 public constant DEV_ZEN_CHANGE_GUEST = keccak256("DevZen_changeGuest");
+	bytes32 public constant DEV_ZEN_EMERGENCY_CHANGE_GUEST = keccak256("DevZen_emergencyChangeGuest");
+	bytes32 public constant DEV_ZEN_MOVE_TO_NEXT_EPISODE = keccak256("DevZen_moveToNextEpisode");
+
 	event DevZenDaoCore_WithdrawEther(address _output);
 	event DevZenDaoCore_SelectNextHost(address _nextHost);
 	event DevZenDaoCore_ChangeTheGuest(address _guest);
@@ -67,14 +83,10 @@ contract DevZenDaoCore is DaoBase {
 		bool isEmergencyGuest;
 	}
 
-	StdDaoToken public devZenToken;
-	StdDaoToken public repToken;
-	Params public params;
-	NextEpisode public nextEpisode;
-
-	constructor(StdDaoToken _devZenToken, StdDaoToken _repToken, DaoStorage _store, Params _params) public DaoBase(_store){
-		devZenToken = _devZenToken;
-		repToken = _repToken;
+	constructor(IDaoBase _daoBase, address[] _tokens, Params _params) public DaoClient(_daoBase){
+		daoBase = _daoBase;
+		devZenToken = StdDaoToken(_tokens[0]);
+		repToken = StdDaoToken(_tokens[1]);
 		params = _params;
 	}
 	// --------------------------------------------- 
@@ -83,14 +95,14 @@ contract DevZenDaoCore is DaoBase {
 	/**
 	 * @dev Change the DAO parameters
 	*/
-	function _updateDaoParams(Params _params) internal onlyOwner {
+	function _updateDaoParams(Params _params) internal  {
 		params = _params;
 	}
 
 	/**
 	 * @dev Withdraw all collected ETH to the _output.
 	*/
-	function _withdrawEther(address _output) internal onlyOwner {
+	function _withdrawEther(address _output) internal  {
 		//emit DevZenDaoCore_WithdrawEther(_output);
 		// TODO: better to use moneyflow instead of _output
 		// Specifying _output can lead to hacks and money loss!
@@ -100,7 +112,7 @@ contract DevZenDaoCore is DaoBase {
 	/**
 	 * @dev Select next episode's host
 	*/
-	function _selectNextHost(address _nextHost) internal onlyOwner {
+	function _selectNextHost(address _nextHost) internal  {
 		//emit DevZenDaoCore_SelectNextHost(_nextHost);
 		// 1 - check if host is still not selected
 		require(0x0==nextEpisode.nextShowHost);
@@ -111,9 +123,9 @@ contract DevZenDaoCore is DaoBase {
 	/**
 	 * @dev Guest did not appear -> penalize him) 
 	*/
-	function _burnGuestStake() internal onlyOwner {
+	function _burnGuestStake() internal  {
 		//emit DevZenDaoCore_BurnGuestStake();	
-		devZenToken.burnFor(address(this), params.becomeGuestStake);
+		daoBase.burnTokens(devZenToken, address(this), params.becomeGuestStake);
 	}
 
 	/**
@@ -121,7 +133,7 @@ contract DevZenDaoCore is DaoBase {
 	 * @param _guest New guest address
 	 * When guest is changed via this function we ensure that stake is returned to previous guest.
 	 */
-	function _changeTheGuest(address _guest) internal onlyOwner {
+	function _changeTheGuest(address _guest) internal  {
 		//emit DevZenDaoCore_ChangeTheGuest(_guest);
 		// 0 - check that next show guest exists
 		require(0x0 != nextEpisode.nextShowGuest);
@@ -142,7 +154,7 @@ contract DevZenDaoCore is DaoBase {
 	 * In normal circumst. people should use 'becomeTheNextShowGuest' method. 
 	 * However, sometimes DevZen team should be able to fix the next guest!
 	*/
-	function _emergency_ChangeTheGuest(address _guest) internal onlyOwner {
+	function _emergency_ChangeTheGuest(address _guest) internal  {
 		// emit DevZenDaoCore_Emergency_ChangeTheGuest(_guest);
 		// 1 - check that next show guest exists
 		require(nextEpisode.nextShowGuest != 0x0);
@@ -157,15 +169,15 @@ contract DevZenDaoCore is DaoBase {
 	 * @param _guestHasCome Whether the guest(initual or emergency) has come to the show
 	 * Should be called right AFTER the recording of the current episode
 	*/
-	function _moveToNextEpisode(bool _guestHasCome) internal onlyOwner {
+	function _moveToNextEpisode(bool _guestHasCome) internal  {
 		//emit DevZenDaoCore_MoveToNextEpisode(_guestHasCome);
 		// 1 - check if 1 week is passed
 		require(_isOneWeekPassed());
 		// 2 - mint tokens 
 		// We are minting X tokens to this address (to the DevZen DAO contract itself)
 		// Current contract is the owner of the devZenToken contract, so it can do anything with it (mint/burn tokens)
-		devZenToken.mintFor(address(this), params.mintTokensPerWeekAmount);
-		repToken.mintFor(address(this), params.mintReputationTokensPerWeekAmount);
+		daoBase.issueTokens(address(devZenToken), address(this), params.mintTokensPerWeekAmount);
+		daoBase.issueTokens(address(repToken), address(this), params.mintReputationTokensPerWeekAmount);
 		// 3 - clear next host and next guest
 		nextEpisode.prevShowHost = nextEpisode.nextShowHost;
 		nextEpisode.prevShowGuest = nextEpisode.nextShowGuest;
@@ -175,24 +187,22 @@ contract DevZenDaoCore is DaoBase {
 		nextEpisode.createdAt = now;
 		// 4 - mint DZTREP tokens to the Guest 
 		if(_guestHasCome) {
-			repToken.mintFor(nextEpisode.prevShowGuest, params.repTokensReward_Guest);
+			daoBase.issueTokens(address(repToken), nextEpisode.prevShowGuest, params.repTokensReward_Guest);
 		}
 		// 5 - mint some reputation tokens to the Host 
-		repToken.mintFor(nextEpisode.prevShowHost, params.repTokensReward_Host);
+		daoBase.issueTokens(address(repToken), nextEpisode.prevShowHost, params.repTokensReward_Host);
 		// TODO:
 		// 6 - mint some reputation tokens to the rest of the DevZen team!
-		uint teamMembers = getMembersCount("DevZenTeam");
+		uint teamMembers = daoBase.getMembersCount("DevZenTeam");
 		assert(teamMembers>=1);
 		uint perMember = params.repTokensReward_TeamMembers / (teamMembers - 1); 
+		address member;
 		for(uint i=0; i<teamMembers; ++i){
-			// TODO: use daoBase.getMemberByIndex() method when it will be implemented!
-			address member = 0x0;
+			member = daoBase.getMemberByIndex("DevZenTeam", i);
 			if(member!=nextEpisode.prevShowHost){
-				repToken.mintFor(member, perMember);
+				daoBase.issueTokens(address(repToken), member, perMember);
 			}
 		}
-		
-
 		// 7 - recovering guests's stake
 		if(_guestHasCome && !nextEpisode.isEmergencyGuest) {
 			// if initial guest has come to the show then transfer DZT back
@@ -203,10 +213,8 @@ contract DevZenDaoCore is DaoBase {
 				_burnGuestStake();
 			}
 		}
-
 		// 8 - clear guest's emergency
-		nextEpisode.isEmergencyGuest = false;
-		
+		nextEpisode.isEmergencyGuest = false;	
 	}
 
 	// ------------------------------------------------------ 
@@ -214,14 +222,14 @@ contract DevZenDaoCore is DaoBase {
 	// ------------------------------------------------------
 
 	// Any patron (DevZen token holder) can use DevZen tokens to run ads: Burn k tokens to add your add into the slot (linear, no priority).
-	function _runAdsInTheNextEpisode(string _adText) internal onlyOwner {
+	function _runAdsInTheNextEpisode(string _adText) internal  {
 		//emit DevZenDaoCore_RunAdsInTheNextEpisode(_adText);
 		// 0 - check if we have available slot 
 		require(nextEpisode.usedSlots<5);
 		// 1 - check if msg.sender has oneAdSlotPrice tokens 
 		require(devZenToken.balanceOf(msg.sender)!=0); 
 		// 2 - burn his oneAdSlotPrice tokens 
-		devZenToken.burnFor(msg.sender, params.oneAdSlotPrice);
+		daoBase.burnTokens(devZenToken, msg.sender, params.oneAdSlotPrice);
 		// 3 - add ad to the slot 
 		nextEpisode.adSlots.push(_adText);
 		nextEpisode.usedSlots++;
@@ -261,7 +269,7 @@ contract DevZenDaoCore is DaoBase {
 	 * @dev Check that 1 week has passed since the last episode
 	 * @return true if 1 week has passed else false
 	 */
-	function _isOneWeekPassed() internal view onlyOwner returns(bool) {
+	function _isOneWeekPassed() internal view  returns(bool) {
 		//emit DevZenDaoCore_IsOneWeekPassed();
 		// return true if this is the 1st episode
 		if(nextEpisode.createdAt == 0) return true;

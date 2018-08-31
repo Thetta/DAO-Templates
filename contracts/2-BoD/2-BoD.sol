@@ -1,15 +1,17 @@
-pragma solidity ^0.4.22;
+pragma solidity ^0.4.24;
 
 import "@thetta/core/contracts/DaoBase.sol";
+import "@thetta/core/contracts/DaoBaseWithUnpackers.sol";
 import "@thetta/core/contracts/DaoBaseAuto.sol";
+import "@thetta/core/contracts/DaoStorage.sol";
 import "@thetta/core/contracts/tokens/StdDaoToken.sol";
-import "@thetta/core/contracts/tasks/Tasks.sol";
+// import "@thetta/core/contracts/tasks/Tasks.sol";
 
 contract BodDaoFactory {
 
-	DaoStorage public store;
 	DaoBaseWithUnpackers public daoBase;
 	DaoBaseAuto public aac;
+	DaoStorage store;
 	StdDaoToken public token;
 
 	address[] tokens;
@@ -27,11 +29,9 @@ contract BodDaoFactory {
 		store = new DaoStorage(tokens);
 		daoBase = new DaoBaseWithUnpackers(store);
 
-		store.allowActionByAddress(keccak256("manageGroups"), this);
+		daoBase.allowActionByAddress(keccak256("manageGroups"), this);
 
 		token.transferOwnership(daoBase);
-		store.transferOwnership(daoBase);
-
 		// 2 - setup
 		setPermissions(_creator, _directors, _employees);
 

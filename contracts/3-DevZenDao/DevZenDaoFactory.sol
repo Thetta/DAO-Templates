@@ -4,22 +4,36 @@ pragma solidity ^0.4.22;
 pragma experimental ABIEncoderV2;
 
 import "@thetta/core/contracts/DaoBase.sol";
+import "@thetta/core/contracts/IDaoBase.sol";
+import "@thetta/core/contracts/DaoStorage.sol";
 import "@thetta/core/contracts/DaoBaseAuto.sol";
 import "@thetta/core/contracts/tokens/StdDaoToken.sol";
+import "@thetta/core/contracts/utils/UtilsLib.sol";
 
 import "./DevZenDao.sol";
+import "./DevZenDaoAuto.sol";
 import "./DevZenDaoCore.sol";
 
+import "./DevZenDaoWithUnpackers.sol";
+
+// DevZen tokens:
+// 10 tokens for 5 ads slots
+// 0 free floating tokens
+// Reputation tokens:
+// 2 tokens as reputation incentive for 1 host   
+// 2 tokens as reputation incentive for 4 moderators
+// 1 tokens as incentive for 1 guest
+
 contract DevZenDaoFactory {
-
+	DevZenDaoWithUnpackers public devZenDao;
+	DaoBase public daoBase;
 	DaoStorage store;
-
-	DevZenDaoCore public dao;
-	// DaoBaseAuto public aac;
+	DevZenDaoAuto public aac;
 
 	constructor(address _boss, address[] _devZenTeam) public{
 		createDao(_boss, _devZenTeam);
-		// setupAac();
+		setupAac();
+		daoBase.renounceOwnership();
 	}
 
 	function createDao(address _boss, address[] _devZenTeam) internal returns(address) {
@@ -27,110 +41,91 @@ contract DevZenDaoFactory {
 		StdDaoToken repToken = new StdDaoToken("DevZenRepToken", "DZTREP", 18, true, true, 10**25);
 
 		address[] tokens;
-		tokens.push(devZenToken);
-		tokens.push(repToken);
-
+		tokens.push(address(devZenToken));
+		tokens.push(address(repToken));
 		store = new DaoStorage(tokens);
+		daoBase = new DaoBase(store);
 
-		// DevZen tokens:
-		// 10 tokens for 5 ads slots
-		// 0 free floating tokens
-
-		// Reputation tokens:
-		// 2 tokens as reputation incentive for 1 host   
-		// 2 tokens as reputation incentive for 4 moderators
-		// 1 tokens as incentive for 1 guest
 		DevZenDao.Params memory defaultParams;
 		defaultParams.mintTokensPerWeekAmount = 10 * 10**18;
 		defaultParams.mintReputationTokensPerWeekAmount = 5 * 10**18;
-		defaultParams.oneAdSlotPrice = 2 * 10**18;
-		// Current ETH price is ~$450. One token will be worth ~$45. One ad will cost ~$90 (2 tokens)
-		defaultParams.oneTokenPriceInWei =  10**17;
-		// To become a guest user should put 5 tokens at stake
+		defaultParams.oneAdSlotPrice = 2 * 10**18; // Current ETH price is ~$450. One token will be worth ~$45. One ad will cost ~$90 (2 tokens)
+		defaultParams.oneTokenPriceInWei =  10**17; // To become a guest user should put 5 tokens at stake
 		defaultParams.becomeGuestStake = 5 * 10**18;
 		defaultParams.repTokensReward_Host = 2 * 10**18;
 		defaultParams.repTokensReward_Guest = 1 * 10**18;
 		defaultParams.repTokensReward_TeamMembers = 2 * 10**18;
+		
+		createNewContract(IDaoBase(daoBase), tokens, defaultParams);
+		
+		store.allowActionByAddress(daoBase.MANAGE_GROUPS(),address(this));
+		store.allowActionByAddress(daoBase.ISSUE_TOKENS(),address(devZenDao));
+		store.allowActionByAddress(daoBase.BURN_TOKENS(),address(devZenDao));
+		store.allowActionByAddress(devZenDao.DEV_ZEN_MOVE_TO_NEXT_EPISODE(), _boss);
+		store.transferOwnership(daoBase);
 
-		createNewContract(devZenToken, repToken, store, defaultParams);
-
-		store.allowActionByAddress(keccak256("manageGroups"),this);
-
-		devZenToken.transferOwnership(dao);
-		repToken.transferOwnership(dao);
-		store.transferOwnership(dao);
+		devZenToken.transferOwnership(daoBase);
+		repToken.transferOwnership(daoBase);
 
 		// 2 - setup
-		setPermissions(_boss, _devZenTeam);
-
-		// 3 - return 
-		dao.transferOwnership(msg.sender);
-		return dao;
-	}
-
-	function createNewContract(StdDaoToken _devZenToken, StdDaoToken _repToken, DaoStorage _store, DevZenDao.Params _defaultParams) internal {
-		dao = new DevZenDao(_devZenToken, _repToken, _store, _defaultParams);
-	}
-
-	function setPermissions(address _boss, address[] _devZenTeam) internal {
-		// 1 - populate groups
-		dao.addGroupMember("DevZenTeam", _boss);
+		daoBase.addGroupMember("DevZenTeam", _boss);
 
 		uint i = 0;
 		for(i=0; i<_devZenTeam.length; ++i){
-			dao.addGroupMember("DevZenTeam", _devZenTeam[i]);
+			daoBase.addGroupMember("DevZenTeam", _devZenTeam[i]);
 		}
 
 		// 1 - set DevZenTeam group permissions
-		dao.allowActionByAnyMemberOfGroup(keccak256("addNewProposal"),"DevZenTeam");
-		dao.allowActionByVoting(keccak256("manageGroups"), dao.repToken());
-		dao.allowActionByVoting(keccak256("modifyMoneyscheme"), dao.repToken());
-		dao.allowActionByVoting(keccak256("upgradeDaoContract"), dao.repToken());
+		daoBase.allowActionByAnyMemberOfGroup(daoBase.ADD_NEW_PROPOSAL(),"DevZenTeam");
+		daoBase.allowActionByVoting(daoBase.MANAGE_GROUPS(), devZenDao.repToken());
+		daoBase.allowActionByVoting(daoBase.UPGRADE_DAO_CONTRACT(), devZenDao.repToken());
 		
 		// 2 - set custom DevZenTeam permissions
-		dao.allowActionByVoting(keccak256("DevZen_updateDaoParams"), dao.repToken());
-		dao.allowActionByVoting(keccak256("DevZen_withdrawEther"), dao.repToken());
-		dao.allowActionByVoting(keccak256("DevZen_selectNextHost"), dao.repToken());
-		dao.allowActionByVoting(keccak256("DevZen_burnGuestStake"), dao.repToken());
-		dao.allowActionByVoting(keccak256("DevZen_changeGuest"), dao.repToken());
-		dao.allowActionByVoting(keccak256("DevZen_emergencyChangeGuest"), dao.repToken());
-		dao.allowActionByVoting(keccak256("DevZen_moveToNextEpisode"), dao.repToken());
-
-		// DO NOT ALLOW to issueTokens even to DevZenTeam members!!!
-		// dao.allowActionByVoting(keccak256("issueTokens"), dao.repToken());
+		daoBase.allowActionByVoting(devZenDao.DEV_ZEN_UPDATE_DAO_PARAMS(), devZenDao.repToken());
+		daoBase.allowActionByVoting(devZenDao.DEV_ZEN_WITHDRAW_ETHER(), devZenDao.repToken());
+		daoBase.allowActionByVoting(devZenDao.DEV_ZEN_SELECT_NEXT_HOST(), devZenDao.repToken());
+		daoBase.allowActionByVoting(devZenDao.DEV_ZEN_BURN_GUEST_STAKE(), devZenDao.repToken());
+		daoBase.allowActionByVoting(devZenDao.DEV_ZEN_CHANGE_GUEST(), devZenDao.repToken());
+		daoBase.allowActionByVoting(devZenDao.DEV_ZEN_EMERGENCY_CHANGE_GUEST(), devZenDao.repToken());
+		daoBase.allowActionByVoting(devZenDao.DEV_ZEN_MOVE_TO_NEXT_EPISODE(), devZenDao.repToken());
+	
+		// 3 - return 
+		// 
+		return devZenDao;
 	}
 
-	/*function setupAac() internal {
+	function createNewContract(IDaoBase _daoBase, address[] _tokens, DevZenDao.Params _defaultParams) internal {
+		devZenDao = new DevZenDaoWithUnpackers(_daoBase, _tokens, _defaultParams);
+	}	
+
+	function setupAac() internal {
 		// TODO: add all custom actions to the DaoBaseAuto derived contract
 
-		aac = new DaoBaseAuto(IDaoBase(dao));
+		aac = new DevZenDaoAuto(IDaoBase(daoBase), devZenDao);
 
-		dao.allowActionByAddress(keccak256("addNewProposal"), aac);
-
-		dao.allowActionByAddress(keccak256("manageGroups"), aac);
-		dao.allowActionByAddress(keccak256("modifyMoneyscheme"), aac);
-		dao.allowActionByAddress(keccak256("upgradeDaoContract"), aac);
-		dao.allowActionByAddress(keccak256("DevZen_updateDaoParams"), aac);
-		dao.allowActionByAddress(keccak256("DevZen_withdrawEther"), aac);
-		dao.allowActionByAddress(keccak256("DevZen_selectNextHost"), aac);
-		dao.allowActionByAddress(keccak256("DevZen_burnGuestStake"), aac);
-		dao.allowActionByAddress(keccak256("DevZen_changeGuest"), aac);
-		dao.allowActionByAddress(keccak256("DevZen_emergencyChangeGuest"), aac);
-		dao.allowActionByAddress(keccak256("DevZen_moveToNextEpisode"), aac);
+		daoBase.allowActionByAddress(daoBase.ADD_NEW_PROPOSAL(), aac);
+		daoBase.allowActionByAddress(daoBase.MANAGE_GROUPS(), aac);
+		daoBase.allowActionByAddress(daoBase.UPGRADE_DAO_CONTRACT(), aac);
+		
+		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_UPDATE_DAO_PARAMS(), aac);
+		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_WITHDRAW_ETHER(), aac);
+		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_SELECT_NEXT_HOST(), aac);
+		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_BURN_GUEST_STAKE(), aac);
+		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_CHANGE_GUEST(), aac);
+		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_EMERGENCY_CHANGE_GUEST(), aac);
+		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_MOVE_TO_NEXT_EPISODE(), aac);
 
 		uint VOTING_TYPE_1P1V = 1;
-		aac.setVotingParams("manageGroups", VOTING_TYPE_1P1V, bytes32(0), "DevZenTeam", bytes32(50), bytes32(50), 0);
-		aac.setVotingParams("modifyMoneyscheme", VOTING_TYPE_1P1V, bytes32(0), "DevZenTeam", bytes32(50), bytes32(50), 0);
-		aac.setVotingParams("upgradeDaoContract", VOTING_TYPE_1P1V, bytes32(0), "DevZenTeam", bytes32(50), bytes32(50), 0);
-		aac.setVotingParams("DevZen_updateDaoParams", VOTING_TYPE_1P1V, bytes32(0), "DevZenTeam", bytes32(50), bytes32(50), 0);
-		aac.setVotingParams("DevZen_withdrawEther", VOTING_TYPE_1P1V, bytes32(0), "DevZenTeam", bytes32(50), bytes32(50), 0);
-		aac.setVotingParams("DevZen_selectNextHost", VOTING_TYPE_1P1V, bytes32(0), "DevZenTeam", bytes32(50), bytes32(50), 0);
-		aac.setVotingParams("DevZen_burnGuestStake", VOTING_TYPE_1P1V, bytes32(0), "DevZenTeam", bytes32(50), bytes32(50), 0);
-		aac.setVotingParams("DevZen_changeGuest", VOTING_TYPE_1P1V, bytes32(0), "DevZenTeam", bytes32(50), bytes32(50), 0);
-		aac.setVotingParams("DevZen_emergencyChangeGuest", VOTING_TYPE_1P1V, bytes32(0), "DevZenTeam", bytes32(50), bytes32(50), 0);
-		aac.setVotingParams("DevZen_moveToNextEpisode", VOTING_TYPE_1P1V, bytes32(0), "DevZenTeam", bytes32(50), bytes32(50), 0);
+		aac.setVotingParams(daoBase.MANAGE_GROUPS(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
+		aac.setVotingParams(daoBase.UPGRADE_DAO_CONTRACT(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
+		aac.setVotingParams(devZenDao.DEV_ZEN_UPDATE_DAO_PARAMS(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
+		aac.setVotingParams(devZenDao.DEV_ZEN_WITHDRAW_ETHER(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
+		aac.setVotingParams(devZenDao.DEV_ZEN_SELECT_NEXT_HOST(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
+		aac.setVotingParams(devZenDao.DEV_ZEN_BURN_GUEST_STAKE(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
+		aac.setVotingParams(devZenDao.DEV_ZEN_CHANGE_GUEST(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
+		aac.setVotingParams(devZenDao.DEV_ZEN_EMERGENCY_CHANGE_GUEST(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
+		aac.setVotingParams(devZenDao.DEV_ZEN_MOVE_TO_NEXT_EPISODE(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
 
-		aac.transferOwnership(msg.sender);
-	}*/
-
+		aac.transferOwnership(daoBase);
+	}
 }
