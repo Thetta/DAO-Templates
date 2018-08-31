@@ -1,4 +1,4 @@
-const CheckExceptions = require("./utils/checkexceptions");
+/*const CheckExceptions = require("./utils/checkexceptions");
 const should = require("./utils/helpers");
 
 const BodDaoFactory = artifacts.require("BodDaoFactory");
@@ -37,3 +37,4 @@ contract("BodDaoFactory", (accounts) => {
 		daoBase = DaoBaseWithUnpackers.at(daoBaseAddress);
 	});
 });
+*/

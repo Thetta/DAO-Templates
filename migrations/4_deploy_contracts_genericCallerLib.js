@@ -13,6 +13,7 @@ var DevZenDaoTestable = artifacts.require("./DevZenDaoTestable");
 var DevZenDaoAuto = artifacts.require("./DevZenDaoAuto");
 var DevZenDaoWithUnpackers = artifacts.require("./DevZenDaoWithUnpackers");
 var DevZenDaoWithUnpackersTestable = artifacts.require("./DevZenDaoWithUnpackersTestable");
+var DevZenDaoAutoTestable = artifacts.require("./DevZenDaoAutoTestable");
 
 module.exports = function (deployer) {
 	deployer.deploy(GenericCallerLib).then(() => {
@@ -26,6 +27,6 @@ module.exports = function (deployer) {
 		deployer.link(GenericCallerLib, DevZenDaoAuto);
 		deployer.link(GenericCallerLib, DevZenDaoWithUnpackers);
 		deployer.link(GenericCallerLib, DevZenDaoWithUnpackersTestable);
-
+		deployer.link(GenericCallerLib, DevZenDaoAutoTestable);		
 	});
 };

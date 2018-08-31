@@ -1,4 +1,4 @@
-const CheckExceptions = require("./utils/checkexceptions");
+/*const CheckExceptions = require("./utils/checkexceptions");
 const should = require("./utils/helpers");
 
 const DaoBaseAuto = artifacts.require("DaoBaseAuto");
@@ -75,7 +75,7 @@ contract('HierarchyDaoFactory', (accounts) => {
 
 	it("manager should be able to manage groups only by voting", async () => {
 		await aac.addGroupMemberAuto("ANY_OTHER_GROUP", employee1, { from: manager1 }).should.be.fulfilled;
-	});*/
+	});
 
 	it("outsider (not in groups) with tokens should not be able to add new proposal", async () => {
 		await hierarchyDao.issueTokens(stdDaoToken.address, outsiderWithTokens, 100, { from: boss }).should.be.fulfilled;
@@ -91,3 +91,4 @@ contract('HierarchyDaoFactory', (accounts) => {
 	});
 	
 });
+*/

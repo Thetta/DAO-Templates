@@ -6,11 +6,11 @@ import "@thetta/core/contracts/utils/GenericCaller.sol";
 
 import "./DevZenDao.sol";
 import "./DevZenDaoCore.sol";
-import "./DevZenDaoWithUnpackers.sol";
+import "./DevZenDaoWithUnpackersTestable.sol";
 
-contract DevZenDaoAuto is GenericCaller{
-	DevZenDaoWithUnpackers devZenDao;
-	constructor(IDaoBase _dao, DevZenDaoWithUnpackers _devZenDao) public GenericCaller(_dao){
+contract DevZenDaoAutoTestable is GenericCaller{
+	DevZenDaoWithUnpackersTestable devZenDao;
+	constructor(IDaoBase _dao, DevZenDaoWithUnpackersTestable _devZenDao) public GenericCaller(_dao){
 		devZenDao = _devZenDao;
 	}
 

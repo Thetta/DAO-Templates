@@ -25,9 +25,15 @@ contract("DevZenDaoCore", (accounts) => {
 
 	beforeEach(async () => {
 		devZenDaoFactory = await DevZenDaoFactoryTestable.new(hostAddr1, [teamMemberAddr1, teamMemberAddr2], {gas:1e13, gasPrice:0});
-		devZenDao = DevZenDaoTestable.at(await devZenDaoFactory.devZenDao());
-		devZenToken = StdDaoToken.at(await devZenDao.devZenToken());
-		repToken = StdDaoToken.at(await devZenDao.repToken());
+
+		const devZenDaoAddr = await devZenDaoFactory.devZenDao();
+		devZenDao = DevZenDaoTestable.at(devZenDaoAddr);
+
+		const devZenTokenAddr = await devZenDao.devZenToken();
+		devZenToken = StdDaoToken.at(devZenTokenAddr);
+
+		const repTokenAddr = await devZenDao.repToken();
+		repToken = StdDaoToken.at(repTokenAddr);
 	});
 
 	describe("withdrawEther", () => {
@@ -451,4 +457,5 @@ contract("DevZenDaoCore", (accounts) => {
 			assert.equal(nextEpisode[nextShowGuestIndex], guestAddr1, "guest1 should be the next show guest");
 		});
 	});
+
 });

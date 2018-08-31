@@ -13,6 +13,7 @@ var DevZenDaoTestable = artifacts.require("./DevZenDaoTestable");
 var DevZenDaoAuto = artifacts.require("./DevZenDaoAuto");
 var DevZenDaoWithUnpackers = artifacts.require("./DevZenDaoWithUnpackers");
 var DevZenDaoWithUnpackersTestable = artifacts.require("./DevZenDaoWithUnpackersTestable");
+var DevZenDaoAutoTestable = artifacts.require("./DevZenDaoAutoTestable");
 
 module.exports = function (deployer) {
 	deployer.deploy(VotingLib).then(() => {
@@ -25,6 +26,8 @@ module.exports = function (deployer) {
 		deployer.link(VotingLib, DevZenDaoFactoryTestable);
 		deployer.link(VotingLib, DevZenDaoTestable);
 		deployer.link(VotingLib, DevZenDaoAuto);
+		deployer.link(VotingLib, DevZenDaoAutoTestable);
+		
 		deployer.link(VotingLib, DevZenDaoWithUnpackers);
 		deployer.link(VotingLib, DevZenDaoWithUnpackersTestable);
 	});

@@ -26,7 +26,7 @@ const checkVoting = async(voting, yes, no, finished, isYes) => {
 	assert.strictEqual(await voting.isYes(),isYes,'Voting is still not finished');
 }
 
-contract("DevZenDaoCore", (accounts) => {
+contract("DevZenDaoAuto", (accounts) => {
 	
 	const boss = accounts[0];
 	const newBoss = accounts[1]
@@ -53,7 +53,7 @@ contract("DevZenDaoCore", (accounts) => {
 		devZenAuto = DevZenDaoAuto.at(await devZenDaoFactory.aac());
 	});
 
-	describe("withdrawEther", () => {
+	describe("withdrawEtherAuto", () => {
 		it("should withdraw ether to specified address", async() => {
 			await devZenDao.moveToNextEpisode(false, {from:boss}).should.be.fulfilled;
 
@@ -74,7 +74,7 @@ contract("DevZenDaoCore", (accounts) => {
 		});
 	});
 
-	describe("selectNextHost", () => {
+	describe("selectNextHostAuto", () => {
 		it("should set next episode's host if it is not yet selected", async() => {
 			await devZenAuto.selectNextHostAuto(boss, {from:teamMember1}).should.be.fulfilled;
 			voting = await getVoting(daoBase,0);	
@@ -89,7 +89,7 @@ contract("DevZenDaoCore", (accounts) => {
 
 	});
 
-	describe("burnGuestStake", () => {
+	describe("burnGuestStakeAuto", () => {
 		it("should burn guest's stake", async() => {
 			await devZenDao.moveToNextEpisode(false,{from:boss}).should.be.fulfilled;
 
@@ -107,7 +107,7 @@ contract("DevZenDaoCore", (accounts) => {
 		});
 	});
 
-	describe("changeTheGuest", () => {
+	describe("changeTheGuestAuto", () => {
 		it("should set the new guest", async() => {
 			await devZenDao.moveToNextEpisode(false,{from:boss}).should.be.fulfilled;
 			const value = web3.toWei("0.5", "ether");
@@ -207,28 +207,14 @@ contract("DevZenDaoCore", (accounts) => {
 		});
 	});
 
-	describe("moveToNextEpisode", () => {
-		it("should mint DZT and DZTREP to contract", async() => {
-			const dztBefore = await devZenToken.balanceOf(devZenDao.address);
-			const dztRepBebore = await repToken.balanceOf(devZenDao.address);
-			assert.equal(dztBefore, 0);
-			assert.equal(dztRepBebore, 0);
-
-			const guestHasCome = false;
-			await devZenDao.moveToNextEpisode(guestHasCome,{from:boss}).should.be.fulfilled;
-
-			const params = await devZenDao.params();
-			const mintTokensPerWeekAmountIndex = 0;
-			const mintReputationTokensPerWeekAmount = 1;
-
-			const dztAfter = await devZenToken.balanceOf(devZenDao.address);
-			const dztRepAfter = await repToken.balanceOf(devZenDao.address);
-			assert.equal(dztAfter, params[mintTokensPerWeekAmountIndex].toNumber());
-			assert.equal(dztRepAfter, params[mintReputationTokensPerWeekAmount].toNumber());
-		});
+	describe("moveToNextEpisodeAuto", () => {
 
 		it("should mint DZTREP to guest if he came", async() => {
-			await devZenDao.moveToNextEpisode(false,{from:boss}).should.be.fulfilled;
+			await devZenAuto.moveToNextEpisodeAuto(false,{from:teamMember1}).should.be.fulfilled;
+			voting = await getVoting(daoBase,0);
+			await checkVoting(voting, 1, 0, false, false);
+			await voting.vote(true,{from:teamMember2});
+			await checkVoting(voting, 2, 0, true, true);
 
 			// guest1 buys 5 DZT
 			const value = web3.toWei("0.5", "ether");
@@ -253,7 +239,11 @@ contract("DevZenDaoCore", (accounts) => {
 		});
 	
 		it("should transfer guest's stake back if initial guest has come", async() => {
-			await devZenDao.moveToNextEpisode(false,{from:boss}).should.be.fulfilled;
+			await devZenAuto.moveToNextEpisodeAuto(false,{from:teamMember1}).should.be.fulfilled;
+			voting = await getVoting(daoBase,0);
+			await checkVoting(voting, 1, 0, false, false);
+			await voting.vote(true,{from:teamMember2});
+			await checkVoting(voting, 2, 0, true, true);
 
 			// guest1 buys 5 DZT
 			const value = web3.toWei("0.5", "ether");

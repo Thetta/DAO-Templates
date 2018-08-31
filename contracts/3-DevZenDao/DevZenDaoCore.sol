@@ -46,7 +46,7 @@ contract DevZenDaoCore is DaoClient {
 	bytes32 public constant DEV_ZEN_BURN_GUEST_STAKE = keccak256("DevZen_burnGuestStake");
 	bytes32 public constant DEV_ZEN_CHANGE_GUEST = keccak256("DevZen_changeGuest");
 	bytes32 public constant DEV_ZEN_EMERGENCY_CHANGE_GUEST = keccak256("DevZen_emergencyChangeGuest");
-	bytes32 public constant DEV_ZEN_MOVE_TO_NEXT_EPISODE = keccak256("DevZen_moveToNextExpisode");
+	bytes32 public constant DEV_ZEN_MOVE_TO_NEXT_EPISODE = keccak256("DevZen_moveToNextEpisode");
 
 	event DevZenDaoCore_WithdrawEther(address _output);
 	event DevZenDaoCore_SelectNextHost(address _nextHost);
