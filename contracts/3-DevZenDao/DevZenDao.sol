@@ -26,7 +26,7 @@ contract DevZenDao is DevZenDaoCore {
 	 * This method should require voting!
 	 * Notice: DevZen_updateDaoParams is a custom action!
 	*/
-	function updateDaoParams(Params _params) isCanDo(DEV_ZEN_UPDATE_DAO_PARAMS) public {
+	function updateDaoParams(Params _params) public isCanDo(DEV_ZEN_UPDATE_DAO_PARAMS) {
 		super._updateDaoParams(_params);
 	}
 
@@ -35,7 +35,7 @@ contract DevZenDao is DevZenDaoCore {
 	 * This method should require voting!
 	 * Notice: DevZen_withdrawEther is a custom action!
 	*/
-	function withdrawEther(address _output) isCanDo(DEV_ZEN_WITHDRAW_ETHER) public {
+	function withdrawEther(address _output) public isCanDo(DEV_ZEN_WITHDRAW_ETHER) {
 		super._withdrawEther(_output);
 	}
 
@@ -44,7 +44,7 @@ contract DevZenDao is DevZenDaoCore {
 	 * This method should require voting!
 	 * Notice: DevZen_selectNextHost is a custom action!
 	*/
-	function selectNextHost(address _nextHost) isCanDo(DEV_ZEN_SELECT_NEXT_HOST) public {
+	function selectNextHost(address _nextHost) public isCanDo(DEV_ZEN_SELECT_NEXT_HOST) {
 		super._selectNextHost(_nextHost);
 	}
 
@@ -62,7 +62,7 @@ contract DevZenDao is DevZenDaoCore {
 	 * @param _guest New guest address
 	 * When guest is changed via this function we ensure that stake is returned to previous guest.
 	 */
-	function changeTheGuest(address _guest) isCanDo(DEV_ZEN_CHANGE_GUEST) public {
+	function changeTheGuest(address _guest) public isCanDo(DEV_ZEN_CHANGE_GUEST) {
 		super._changeTheGuest(_guest);
 	}
 
@@ -72,7 +72,7 @@ contract DevZenDao is DevZenDaoCore {
 	 * However, sometimes DevZen team should be able to fix the next guest!
 	 * Notice: DevZen_emergencyChangeGuest is a custom action!
 	*/
-	function emergency_ChangeTheGuest(address _guest) isCanDo(DEV_ZEN_EMERGENCY_CHANGE_GUEST) public {
+	function emergency_ChangeTheGuest(address _guest) public isCanDo(DEV_ZEN_EMERGENCY_CHANGE_GUEST) {
 		super._emergency_ChangeTheGuest(_guest);
 	}
 
@@ -80,9 +80,9 @@ contract DevZenDao is DevZenDaoCore {
 	 * @dev Move to next episode
 	 * @param _guestHasCome Whether the guest(initual or emergency) has come to the show
 	 * Should be called right AFTER the recording of the current episode
-	 * Notice: DevZen_moveToNextExpisode is a custom action!
+	 * Notice: DevZen_moveToNextEpisode is a custom action!
 	*/
-	function moveToNextEpisode(bool _guestHasCome) isCanDo(DEV_ZEN_MOVE_TO_NEXT_EPISODE) public {
+	function moveToNextEpisode(bool _guestHasCome) public isCanDo(DEV_ZEN_MOVE_TO_NEXT_EPISODE) {
 		super._moveToNextEpisode(_guestHasCome);
 	}
 
