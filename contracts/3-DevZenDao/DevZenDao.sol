@@ -82,7 +82,7 @@ contract DevZenDao is DevZenDaoCore {
 	 * Should be called right AFTER the recording of the current episode
 	 * Notice: DevZen_moveToNextExpisode is a custom action!
 	*/
-	function moveToNextEpisode(bool _guestHasCome) isCanDo(DEV_ZEN_MOVE_TO_NEXT_EXPISODE) public {
+	function moveToNextEpisode(bool _guestHasCome) isCanDo(DEV_ZEN_MOVE_TO_NEXT_EPISODE) public {
 		super._moveToNextEpisode(_guestHasCome);
 	}
 

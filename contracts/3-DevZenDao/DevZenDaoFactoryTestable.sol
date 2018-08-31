@@ -8,6 +8,7 @@ import "./DevZenDaoTestable.sol";
 import "@thetta/core/contracts/IDaoBase.sol";
 import "./DevZenDaoWithUnpackersTestable.sol";
 contract DevZenDaoFactoryTestable is DevZenDaoFactory {
+	DevZenDaoWithUnpackersTestable public devZenDao;
 
 	constructor(address _boss, address[] _devZenTeam) DevZenDaoFactory(_boss, _devZenTeam) public {}
 

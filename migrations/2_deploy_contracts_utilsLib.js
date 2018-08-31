@@ -28,6 +28,7 @@ module.exports = function (deployer) {
 
 		deployer.link(UtilsLib, BodDaoFactory);
 		deployer.link(UtilsLib, HierarchyDaoFactory);
+		deployer.link(UtilsLib, DevZenDaoFactory);
 		deployer.link(UtilsLib, DevZenDaoFactoryTestable);
 		deployer.link(UtilsLib, DevZenDaoTestable);
 		deployer.link(UtilsLib, DevZenDaoWithUnpackersTestable);
