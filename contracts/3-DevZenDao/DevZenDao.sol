@@ -26,7 +26,7 @@ contract DevZenDao is DevZenDaoCore {
 	 * This method should require voting!
 	 * Notice: DevZen_updateDaoParams is a custom action!
 	*/
-	function updateDaoParams(Params _params) isCanDo("DevZen_updateDaoParams") public {
+	function updateDaoParams(Params _params) isCanDo(DEV_ZEN_UPDATE_DAO_PARAMS) public {
 		super._updateDaoParams(_params);
 	}
 
@@ -35,7 +35,7 @@ contract DevZenDao is DevZenDaoCore {
 	 * This method should require voting!
 	 * Notice: DevZen_withdrawEther is a custom action!
 	*/
-	function withdrawEther(address _output) isCanDo("DevZen_withdrawEther") public {
+	function withdrawEther(address _output) isCanDo(DEV_ZEN_WITHDRAW_ETHER) public {
 		super._withdrawEther(_output);
 	}
 
@@ -44,7 +44,7 @@ contract DevZenDao is DevZenDaoCore {
 	 * This method should require voting!
 	 * Notice: DevZen_selectNextHost is a custom action!
 	*/
-	function selectNextHost(address _nextHost) isCanDo("DevZen_selectNextHost") public {
+	function selectNextHost(address _nextHost) isCanDo(DEV_ZEN_SELECT_NEXT_HOST) public {
 		super._selectNextHost(_nextHost);
 	}
 
@@ -53,7 +53,7 @@ contract DevZenDao is DevZenDaoCore {
 	 * This method should require voting!
 	 * Notice: DevZen_selectNextHost is a custom action!
 	*/
-	function burnGuestStake() public isCanDo("DevZen_burnGuestStake") {
+	function burnGuestStake() public isCanDo(DEV_ZEN_BURN_GUEST_STAKE) {
 		super._burnGuestStake();
 	}
 
@@ -62,7 +62,7 @@ contract DevZenDao is DevZenDaoCore {
 	 * @param _guest New guest address
 	 * When guest is changed via this function we ensure that stake is returned to previous guest.
 	 */
-	function changeTheGuest(address _guest) isCanDo("DevZen_changeGuest") public {
+	function changeTheGuest(address _guest) isCanDo(DEV_ZEN_CHANGE_GUEST) public {
 		super._changeTheGuest(_guest);
 	}
 
@@ -72,7 +72,7 @@ contract DevZenDao is DevZenDaoCore {
 	 * However, sometimes DevZen team should be able to fix the next guest!
 	 * Notice: DevZen_emergencyChangeGuest is a custom action!
 	*/
-	function emergency_ChangeTheGuest(address _guest) isCanDo("DevZen_emergencyChangeGuest") public {
+	function emergency_ChangeTheGuest(address _guest) isCanDo(DEV_ZEN_EMERGENCY_CHANGE_GUEST) public {
 		super._emergency_ChangeTheGuest(_guest);
 	}
 
@@ -82,7 +82,7 @@ contract DevZenDao is DevZenDaoCore {
 	 * Should be called right AFTER the recording of the current episode
 	 * Notice: DevZen_moveToNextExpisode is a custom action!
 	*/
-	function moveToNextEpisode(bool _guestHasCome) isCanDo("DevZen_moveToNextExpisode") public {
+	function moveToNextEpisode(bool _guestHasCome) isCanDo(DEV_ZEN_MOVE_TO_NEXT_EXPISODE) public {
 		super._moveToNextEpisode(_guestHasCome);
 	}
 

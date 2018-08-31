@@ -40,6 +40,14 @@ contract DevZenDaoCore is DaoClient {
 	NextEpisode public nextEpisode;
 	IDaoBase daoBase;
 
+	bytes32 public constant DEV_ZEN_UPDATE_DAO_PARAMS = keccak256("DevZen_updateDaoParams");
+	bytes32 public constant DEV_ZEN_WITHDRAW_ETHER = keccak256("DevZen_withdrawEther");
+	bytes32 public constant DEV_ZEN_SELECT_NEXT_HOST = keccak256("DevZen_selectNextHost");
+	bytes32 public constant DEV_ZEN_BURN_GUEST_STAKE = keccak256("DevZen_burnGuestStake");
+	bytes32 public constant DEV_ZEN_CHANGE_GUEST = keccak256("DevZen_changeGuest");
+	bytes32 public constant DEV_ZEN_EMERGENCY_CHANGE_GUEST = keccak256("DevZen_emergencyChangeGuest");
+	bytes32 public constant DEV_ZEN_MOVE_TO_NEXT_EXPISODE = keccak256("DevZen_moveToNextExpisode");
+
 	event DevZenDaoCore_WithdrawEther(address _output);
 	event DevZenDaoCore_SelectNextHost(address _nextHost);
 	event DevZenDaoCore_ChangeTheGuest(address _guest);
@@ -73,11 +81,6 @@ contract DevZenDaoCore is DaoClient {
 		uint usedSlots;
 		uint createdAt;
 		bool isEmergencyGuest;
-	}
-
-	modifier isCanDo(bytes32 _what){
-		require(daoBase.isCanDoAction(msg.sender, _what)); 
-		_; 
 	}
 
 	constructor(IDaoBase _daoBase, address[] _tokens, Params _params) public DaoClient(_daoBase){
