@@ -28,11 +28,11 @@ contract DevZenDaoFactory {
 	DevZenDaoWithUnpackers public devZenDao;
 	DaoBase public daoBase;
 	DaoStorage store;
-	DevZenDaoAuto public aac;
+	DevZenDaoAuto public devZenDaoAuto;
 
 	constructor(address _boss, address[] _devZenTeam) public{
 		createDao(_boss, _devZenTeam);
-		setupAac();
+		setupDevZenDaoAuto();
 		daoBase.renounceOwnership();
 	}
 
@@ -98,34 +98,34 @@ contract DevZenDaoFactory {
 		devZenDao = new DevZenDaoWithUnpackers(_daoBase, _tokens, _defaultParams);
 	}	
 
-	function setupAac() internal {
+	function setupDevZenDaoAuto() internal {
 		// TODO: add all custom actions to the DaoBaseAuto derived contract
 
-		aac = new DevZenDaoAuto(IDaoBase(daoBase), devZenDao);
+		devZenDaoAuto = new DevZenDaoAuto(IDaoBase(daoBase), devZenDao);
 
-		daoBase.allowActionByAddress(daoBase.ADD_NEW_PROPOSAL(), aac);
-		daoBase.allowActionByAddress(daoBase.MANAGE_GROUPS(), aac);
-		daoBase.allowActionByAddress(daoBase.UPGRADE_DAO_CONTRACT(), aac);
+		daoBase.allowActionByAddress(daoBase.ADD_NEW_PROPOSAL(), devZenDaoAuto);
+		daoBase.allowActionByAddress(daoBase.MANAGE_GROUPS(), devZenDaoAuto);
+		daoBase.allowActionByAddress(daoBase.UPGRADE_DAO_CONTRACT(), devZenDaoAuto);
 		
-		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_UPDATE_DAO_PARAMS(), aac);
-		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_WITHDRAW_ETHER(), aac);
-		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_SELECT_NEXT_HOST(), aac);
-		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_BURN_GUEST_STAKE(), aac);
-		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_CHANGE_GUEST(), aac);
-		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_EMERGENCY_CHANGE_GUEST(), aac);
-		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_MOVE_TO_NEXT_EPISODE(), aac);
+		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_UPDATE_DAO_PARAMS(), devZenDaoAuto);
+		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_WITHDRAW_ETHER(), devZenDaoAuto);
+		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_SELECT_NEXT_HOST(), devZenDaoAuto);
+		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_BURN_GUEST_STAKE(), devZenDaoAuto);
+		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_CHANGE_GUEST(), devZenDaoAuto);
+		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_EMERGENCY_CHANGE_GUEST(), devZenDaoAuto);
+		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_MOVE_TO_NEXT_EPISODE(), devZenDaoAuto);
 
 		uint VOTING_TYPE_1P1V = 1;
-		aac.setVotingParams(daoBase.MANAGE_GROUPS(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
-		aac.setVotingParams(daoBase.UPGRADE_DAO_CONTRACT(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
-		aac.setVotingParams(devZenDao.DEV_ZEN_UPDATE_DAO_PARAMS(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
-		aac.setVotingParams(devZenDao.DEV_ZEN_WITHDRAW_ETHER(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
-		aac.setVotingParams(devZenDao.DEV_ZEN_SELECT_NEXT_HOST(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
-		aac.setVotingParams(devZenDao.DEV_ZEN_BURN_GUEST_STAKE(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
-		aac.setVotingParams(devZenDao.DEV_ZEN_CHANGE_GUEST(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
-		aac.setVotingParams(devZenDao.DEV_ZEN_EMERGENCY_CHANGE_GUEST(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
-		aac.setVotingParams(devZenDao.DEV_ZEN_MOVE_TO_NEXT_EPISODE(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
+		devZenDaoAuto.setVotingParams(daoBase.MANAGE_GROUPS(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
+		devZenDaoAuto.setVotingParams(daoBase.UPGRADE_DAO_CONTRACT(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
+		devZenDaoAuto.setVotingParams(devZenDao.DEV_ZEN_UPDATE_DAO_PARAMS(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
+		devZenDaoAuto.setVotingParams(devZenDao.DEV_ZEN_WITHDRAW_ETHER(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
+		devZenDaoAuto.setVotingParams(devZenDao.DEV_ZEN_SELECT_NEXT_HOST(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
+		devZenDaoAuto.setVotingParams(devZenDao.DEV_ZEN_BURN_GUEST_STAKE(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
+		devZenDaoAuto.setVotingParams(devZenDao.DEV_ZEN_CHANGE_GUEST(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
+		devZenDaoAuto.setVotingParams(devZenDao.DEV_ZEN_EMERGENCY_CHANGE_GUEST(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
+		devZenDaoAuto.setVotingParams(devZenDao.DEV_ZEN_MOVE_TO_NEXT_EPISODE(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
 
-		aac.transferOwnership(daoBase);
+		devZenDaoAuto.transferOwnership(daoBase);
 	}
 }

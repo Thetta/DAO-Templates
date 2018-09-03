@@ -21,7 +21,7 @@ contract('HierarchyDaoFactory', (accounts) => {
 	let hierarchyDaoFactory;
 	let hierarchyDao; // inherits from DaoBaseWithUnpackers
 	// let store;
-	let aac;
+	let hierarchyDaoAuto;
 	let informalProposal;
 	let stdDaoToken;
 
@@ -34,8 +34,8 @@ contract('HierarchyDaoFactory', (accounts) => {
 		// const storeAddress = await hierarchyDao.store();
 		// store = DaoStorage.at(storeAddress);
 
-		// const aacAddress = await hierarchyDaoFactory.aac();
-		// aac = DaoBaseAuto.at(aacAddress);
+		// const hierarchyDaoAutoAddress = await hierarchyDaoFactory.hierarchyDaoAuto();
+		// hierarchyDaoAuto = DaoBaseAuto.at(hierarchyDaoAutoAddress);
 
 		const stdDaoTokenAddress = await hierarchyDaoFactory.token();
 		stdDaoToken = StdDaoToken.at(stdDaoTokenAddress);
@@ -70,11 +70,11 @@ contract('HierarchyDaoFactory', (accounts) => {
 	});
 
 	/*it("boss should be able to manage groups only by voting", async () => {
-		await aac.addGroupMemberAuto("ANY_GROUP", employee1, { from: boss }).should.be.fulfilled;
+		await hierarchyDaoAuto.addGroupMemberAuto("ANY_GROUP", employee1, { from: boss }).should.be.fulfilled;
 	});
 
 	it("manager should be able to manage groups only by voting", async () => {
-		await aac.addGroupMemberAuto("ANY_OTHER_GROUP", employee1, { from: manager1 }).should.be.fulfilled;
+		await hierarchyDaoAuto.addGroupMemberAuto("ANY_OTHER_GROUP", employee1, { from: manager1 }).should.be.fulfilled;
 	});
 
 	it("outsider (not in groups) with tokens should not be able to add new proposal", async () => {

@@ -10,7 +10,7 @@ import "@thetta/core/contracts/tokens/StdDaoToken.sol";
 contract BodDaoFactory {
 
 	DaoBaseWithUnpackers public daoBase;
-	DaoBaseAuto public aac;
+	DaoBaseAuto public bodDaoAuto;
 	DaoStorage store;
 	StdDaoToken public token;
 
@@ -18,7 +18,7 @@ contract BodDaoFactory {
 
 	constructor(address _creator, address[] _directors, address[] _employees) public {
 		createDao(_creator, _directors, _employees);
-		// setupAac();
+		// setupBodDaoAuto();
 	}
 
 	function createDao(address _creator, address[] _directors, address[] _employees) internal returns (address) {
@@ -74,25 +74,25 @@ contract BodDaoFactory {
 		}
 	}
 
-	/*function setupAac() internal {
+	/*function setupBodDaoAuto() internal {
 
-		aac = new DaoBaseAuto(daoBase);
+		bodDaoAuto = new DaoBaseAuto(daoBase);
 
 		uint VOTING_TYPE_1P1V = 1;
-		aac.setVotingParams("manageGroups", VOTING_TYPE_1P1V, 0, "BoD", 50, 50, 0);
-		aac.setVotingParams("addNewTask", VOTING_TYPE_1P1V, (24 * 60), "BoD", 50, 50, 0);
-		aac.setVotingParams("modifyMoneyscheme", VOTING_TYPE_1P1V, (24 * 60), "BoD", 50, 50, 0);
-		aac.setVotingParams("issueTokens", VOTING_TYPE_1P1V, (24 * 60), "BoD", 50, 50, 0);
-		aac.setVotingParams("upgradeDaoContract", VOTING_TYPE_1P1V, (24 * 60), "BoD", 50, 50, 0);
-		aac.setVotingParams("withdrawDonations", VOTING_TYPE_1P1V, (24 * 60), "BoD", 50, 50, 0);
-		aac.setVotingParams("flushReserveFundTo", VOTING_TYPE_1P1V, (24 * 60), "BoD", 50, 50, 0);
-		aac.setVotingParams("flushDividendsFundTo", VOTING_TYPE_1P1V, (24 * 60), "BoD", 50, 50, 0);
+		bodDaoAuto.setVotingParams("manageGroups", VOTING_TYPE_1P1V, 0, "BoD", 50, 50, 0);
+		bodDaoAuto.setVotingParams("addNewTask", VOTING_TYPE_1P1V, (24 * 60), "BoD", 50, 50, 0);
+		bodDaoAuto.setVotingParams("modifyMoneyscheme", VOTING_TYPE_1P1V, (24 * 60), "BoD", 50, 50, 0);
+		bodDaoAuto.setVotingParams("issueTokens", VOTING_TYPE_1P1V, (24 * 60), "BoD", 50, 50, 0);
+		bodDaoAuto.setVotingParams("upgradeDaoContract", VOTING_TYPE_1P1V, (24 * 60), "BoD", 50, 50, 0);
+		bodDaoAuto.setVotingParams("withdrawDonations", VOTING_TYPE_1P1V, (24 * 60), "BoD", 50, 50, 0);
+		bodDaoAuto.setVotingParams("flushReserveFundTo", VOTING_TYPE_1P1V, (24 * 60), "BoD", 50, 50, 0);
+		bodDaoAuto.setVotingParams("flushDividendsFundTo", VOTING_TYPE_1P1V, (24 * 60), "BoD", 50, 50, 0);
 
-		daoBase.allowActionByAddress(keccak256("manageGroups"), aac);
-		daoBase.allowActionByAddress(keccak256("addNewProposal"), aac);
-		daoBase.allowActionByAddress(keccak256("modifyMoneyscheme"), aac);
+		daoBase.allowActionByAddress(keccak256("manageGroups"), bodDaoAuto);
+		daoBase.allowActionByAddress(keccak256("addNewProposal"), bodDaoAuto);
+		daoBase.allowActionByAddress(keccak256("modifyMoneyscheme"), bodDaoAuto);
 
-		aac.transferOwnership(msg.sender);
+		bodDaoAuto.transferOwnership(msg.sender);
 	}*/
 
 }

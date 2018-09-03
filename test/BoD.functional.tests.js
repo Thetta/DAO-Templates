@@ -22,7 +22,7 @@ contract("BodDaoFactory", (accounts) => {
 	var bodDaoFactory;
 	// let store;
 	let daoBase;
-	let aac;
+	let bodDaoAuto;
 	let informalProposal;
 	let weiTask;
 	let voting;
