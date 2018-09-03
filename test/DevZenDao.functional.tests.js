@@ -41,7 +41,7 @@ contract("DevZenDaoAuto", (accounts) => {
 	let devZenDao;
 	let devZenToken;
 	let repToken;
-	let devZenAuto;
+	let devZenDaoAuto;
 	let daoBase;
 
 	beforeEach(async () => {
@@ -50,7 +50,7 @@ contract("DevZenDaoAuto", (accounts) => {
 		daoBase = DaoBase.at(await devZenDaoFactory.daoBase());
 		devZenToken = StdDaoToken.at(await devZenDao.devZenToken());
 		repToken = StdDaoToken.at(await devZenDao.repToken());
-		devZenAuto = DevZenDaoAuto.at(await devZenDaoFactory.aac());
+		devZenDaoAuto = DevZenDaoAuto.at(await devZenDaoFactory.devZenDaoAuto());
 	});
 
 	describe("withdrawEtherAuto", () => {
@@ -64,7 +64,7 @@ contract("DevZenDaoAuto", (accounts) => {
 			const balanceAfterTokensBought = web3.eth.getBalance(patron);
 			assert.isTrue(initialBalance.toNumber() - balanceAfterTokensBought.toNumber() > value, 'patron should spend 1 ETH on tokens');
 
-			await devZenAuto.withdrawEtherAuto(patron,{from:teamMember1}).should.be.fulfilled;
+			await devZenDaoAuto.withdrawEtherAuto(patron,{from:teamMember1}).should.be.fulfilled;
 			voting = await getVoting(daoBase,0);	
 			await checkVoting(voting, 1, 0, false, false);
 			await voting.vote(true,{from:teamMember2});
@@ -76,7 +76,7 @@ contract("DevZenDaoAuto", (accounts) => {
 
 	describe("selectNextHostAuto", () => {
 		it("should set next episode's host if it is not yet selected", async() => {
-			await devZenAuto.selectNextHostAuto(boss, {from:teamMember1}).should.be.fulfilled;
+			await devZenDaoAuto.selectNextHostAuto(boss, {from:teamMember1}).should.be.fulfilled;
 			voting = await getVoting(daoBase,0);	
 			await checkVoting(voting, 1, 0, false, false);
 			await voting.vote(true,{from:teamMember2});
@@ -96,7 +96,7 @@ contract("DevZenDaoAuto", (accounts) => {
 			const balanceBeforeBurn = await devZenToken.balanceOf(devZenDao.address);
 			assert.equal(balanceBeforeBurn.toNumber(), 10e18, "on new episode 10 DZT are minted to contract");
 
-			await devZenAuto.burnGuestStakeAuto({from:teamMember1}).should.be.fulfilled;
+			await devZenDaoAuto.burnGuestStakeAuto({from:teamMember1}).should.be.fulfilled;
 			voting = await getVoting(daoBase,0);	
 			await checkVoting(voting, 1, 0, false, false);
 			await voting.vote(true,{from:teamMember2});
@@ -129,7 +129,7 @@ contract("DevZenDaoAuto", (accounts) => {
 			await devZenToken.approve(devZenDao.address, 5e18, { from: guest2 });
 
 			// manually change the guest to guest2
-			await devZenAuto.changeTheGuestAuto(guest2, {from:teamMember1}).should.be.fulfilled;
+			await devZenDaoAuto.changeTheGuestAuto(guest2, {from:teamMember1}).should.be.fulfilled;
 			voting = await getVoting(daoBase,0);
 			await checkVoting(voting, 1, 0, false, false);
 			await voting.vote(true,{from:teamMember2});
@@ -159,7 +159,7 @@ contract("DevZenDaoAuto", (accounts) => {
 			assert.equal(guest1BalanceBefore.toNumber(), 0, "should be 0 because guest1 bought 5 DZT and put them at stake to become a guest")
 
 			// manually change the guest to guest2
-			await devZenAuto.changeTheGuestAuto(guest2,{from:teamMember1}).should.be.fulfilled;
+			await devZenDaoAuto.changeTheGuestAuto(guest2,{from:teamMember1}).should.be.fulfilled;
 			voting = await getVoting(daoBase,0);	
 			await checkVoting(voting, 1, 0, false, false);
 			await voting.vote(true,{from:teamMember2});
@@ -181,7 +181,7 @@ contract("DevZenDaoAuto", (accounts) => {
 			await devZenDao.becomeTheNextShowGuest({ from: guest1 }).should.be.fulfilled;
 
 			// host sets guest2 an emergency guest
-			await devZenAuto.emergency_ChangeTheGuestAuto(guest2,{from:teamMember1}).should.be.fulfilled;
+			await devZenDaoAuto.emergency_ChangeTheGuestAuto(guest2,{from:teamMember1}).should.be.fulfilled;
 			voting = await getVoting(daoBase,0);	
 			await checkVoting(voting, 1, 0, false, false);
 			await voting.vote(true,{from:teamMember2});
@@ -196,7 +196,7 @@ contract("DevZenDaoAuto", (accounts) => {
 			assert.equal(balanceGuest2Before.toNumber(), 0, "should be 0 because it is an emergency guest");
 
 			// host sets "legal" guest
-			await devZenAuto.changeTheGuestAuto(guest3,{from:teamMember1}).should.be.fulfilled;
+			await devZenDaoAuto.changeTheGuestAuto(guest3,{from:teamMember1}).should.be.fulfilled;
 			voting = await getVoting(daoBase,1);
 			await checkVoting(voting, 1, 0, false, false);
 			await voting.vote(true,{from:teamMember2});
@@ -210,7 +210,7 @@ contract("DevZenDaoAuto", (accounts) => {
 	describe("moveToNextEpisodeAuto", () => {
 
 		it("should mint DZTREP to guest if he came", async() => {
-			await devZenAuto.moveToNextEpisodeAuto(false,{from:teamMember1}).should.be.fulfilled;
+			await devZenDaoAuto.moveToNextEpisodeAuto(false,{from:teamMember1}).should.be.fulfilled;
 			voting = await getVoting(daoBase,0);
 			await checkVoting(voting, 1, 0, false, false);
 			await voting.vote(true,{from:teamMember2});
@@ -239,7 +239,7 @@ contract("DevZenDaoAuto", (accounts) => {
 		});
 	
 		it("should transfer guest's stake back if initial guest has come", async() => {
-			await devZenAuto.moveToNextEpisodeAuto(false,{from:teamMember1}).should.be.fulfilled;
+			await devZenDaoAuto.moveToNextEpisodeAuto(false,{from:teamMember1}).should.be.fulfilled;
 			voting = await getVoting(daoBase,0);
 			await checkVoting(voting, 1, 0, false, false);
 			await voting.vote(true,{from:teamMember2});
