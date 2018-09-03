@@ -17,7 +17,7 @@ contract HierarchyDaoFactory {
 	StdDaoToken public token;
 
 	HierarchyDao public dao;
-	DaoBaseAuto public hierarcyDaoAuto;
+	DaoBaseAuto public hierarchyDaoAuto;
 
 	address[] tokens;
 
@@ -92,16 +92,16 @@ contract HierarchyDaoFactory {
 
 	/*function setupHierarchyDaoAuto() internal {
 
-		hierarcyDaoAuto = new DaoBaseAuto(dao);
+		hierarchyDaoAuto = new DaoBaseAuto(dao);
 
 		// set voring params 1 person 1 vote
 		uint8 VOTING_TYPE_1P1V = 1;
-		hierarcyDaoAuto.setVotingParams("manageGroups", VOTING_TYPE_1P1V, bytes32(0), "Managers", bytes32(50), bytes32(50), 0);
+		hierarchyDaoAuto.setVotingParams("manageGroups", VOTING_TYPE_1P1V, bytes32(0), "Managers", bytes32(50), bytes32(50), 0);
 
-		dao.allowActionByAddress(keccak256("addNewProposal"), hierarcyDaoAuto);
-		dao.allowActionByAddress(keccak256("manageGroups"), hierarcyDaoAuto);
+		dao.allowActionByAddress(keccak256("addNewProposal"), hierarchyDaoAuto);
+		dao.allowActionByAddress(keccak256("manageGroups"), hierarchyDaoAuto);
 
-		hierarcyDaoAuto.transferOwnership(msg.sender);
+		hierarchyDaoAuto.transferOwnership(msg.sender);
 	}*/
 	
 }
