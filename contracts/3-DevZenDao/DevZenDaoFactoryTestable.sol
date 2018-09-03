@@ -41,14 +41,14 @@ contract DevZenDaoFactoryTestable {
 		store.allowActionByAddress(devZenDao.DEV_ZEN_MOVE_TO_NEXT_EPISODE(), _boss);
 		store.transferOwnership(daoBase);
 
-		devZenDao.setParam("MintTokensPerWeekAmount", 10 * 10**18);
-		devZenDao.setParam("MintReputationTokensPerWeekAmount", 5 * 10**18);
-		devZenDao.setParam("OneAdSlotPrice", 2 * 10**18); // Current ETH price is ~$450. One token will be worth ~$45. One ad will cost ~$90 (2 tokens)
-		devZenDao.setParam("OneTokenPriceInWei",  10**17); //) To become a guest user should put 5 tokens at stake
-		devZenDao.setParam("BecomeGuestStake", 5 * 10**18);
-		devZenDao.setParam("RepTokensReward_Host", 2 * 10**18);
-		devZenDao.setParam("RepTokensReward_Guest", 1 * 10**18);
-		devZenDao.setParam("RepTokensReward_TeamMembers", 2 * 10**18);
+		devZenDao.setParam(devZenDao.MINT_TOKENS_PER_WEEK_AMOUNT(), 10 * 10**18);
+		devZenDao.setParam(devZenDao.MINT_REPUTATION_TOKENS_PER_WEEK_AMOUNT(), 5 * 10**18);
+		devZenDao.setParam(devZenDao.ONE_AD_SLOT_PRICE(), 2 * 10**18); // Current ETH price is ~$450. One token will be worth ~$45. One ad will cost ~$90 (2 tokens)
+		devZenDao.setParam(devZenDao.ONE_TOKEN_PRICE_IN_WEI(),  10**17); //) To become a guest user should put 5 tokens at stake
+		devZenDao.setParam(devZenDao.BECOME_GUEST_STAKE(), 5 * 10**18);
+		devZenDao.setParam(devZenDao.REP_TOKENS_REWARD_HOST(), 2 * 10**18);
+		devZenDao.setParam(devZenDao.REP_TOKENS_REWARD_GUEST(), 1 * 10**18);
+		devZenDao.setParam(devZenDao.REP_TOKENS_REWARD_TEAM_MEMBERS(), 2 * 10**18);
 
 		devZenToken.transferOwnership(daoBase);
 		repToken.transferOwnership(daoBase);

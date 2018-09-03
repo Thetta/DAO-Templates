@@ -25,7 +25,7 @@ contract DevZenDao is DevZenDaoCore {
 	 * This method should require voting!
 	 * Notice: DevZen_updateDaoParams is a custom action!
 	*/
-	function setParam(string _param, uint _value) public isCanDo(DEV_ZEN_UPDATE_DAO_PARAMS) {
+	function setParam(bytes32 _param, uint _value) public isCanDo(DEV_ZEN_UPDATE_DAO_PARAMS) {
 		super._setParam(_param, _value);
 	}
 

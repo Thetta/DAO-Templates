@@ -28,7 +28,7 @@ contract DevZenDaoTestable is DevZenDaoCore {
 	/**
 	 * @dev Change the DAO parameters
 	*/
-	function setParam(string _param, uint _value) public {
+	function setParam(bytes32 _param, uint _value) public {
 		super._setParam(_param, _value);
 	}
 
