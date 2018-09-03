@@ -7,8 +7,8 @@ import "./DevZenDao.sol";
 import "./DevZenDaoTestable.sol";
 
 contract DevZenDaoWithUnpackersTestable is DevZenDaoTestable {
-	constructor(IDaoBase _daoBase, address[] _tokens, Params _params) public 
-	DevZenDaoTestable(_daoBase, _tokens, _params){}
+	constructor(IDaoBase _daoBase, address[] _tokens) public 
+	DevZenDaoTestable(_daoBase, _tokens){}
 
 	// function updateDaoParamsGeneric(bytes32[] _params) external {
 	// 	address params = address(_params[0]);

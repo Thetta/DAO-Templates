@@ -205,14 +205,15 @@ contract("DevZenDaoCore", (accounts) => {
 			const guestHasCome = false;
 			await devZenDao.moveToNextEpisode(guestHasCome).should.be.fulfilled;
 
-			const params = await devZenDao.params();
+			const mintTokensPerWeekAmountIndexParam = await devZenDao.params(web3.sha3("MintTokensPerWeekAmount"));
+			const mintReputationTokensPerWeekAmountParam = await devZenDao.params(web3.sha3("MintReputationTokensPerWeekAmount"));
 			const mintTokensPerWeekAmountIndex = 0;
 			const mintReputationTokensPerWeekAmount = 1;
 
 			const dztAfter = await devZenToken.balanceOf(devZenDao.address);
 			const dztRepAfter = await repToken.balanceOf(devZenDao.address);
-			assert.equal(dztAfter, params[mintTokensPerWeekAmountIndex].toNumber());
-			assert.equal(dztRepAfter, params[mintReputationTokensPerWeekAmount].toNumber());
+			assert.equal(dztAfter, mintTokensPerWeekAmountIndexParam.toNumber());
+			assert.equal(dztRepAfter, mintReputationTokensPerWeekAmountParam.toNumber());
 		});
 
 		it("should mint DZTREP to guest if he came", async() => {
@@ -233,11 +234,11 @@ contract("DevZenDaoCore", (accounts) => {
 			await increaseTime(60 * 60 * 24 * 7);
 			await devZenDao.moveToNextEpisode(true).should.be.fulfilled;
 
-			const params = await devZenDao.params();
+			const repTokensRewardGuestIndexParam = await devZenDao.params(web3.sha3("RepTokensReward_Guest"));
 			const repTokensRewardGuestIndex = 6;
 
 			const repBalanceAfter = await repToken.balanceOf(guestAddr1);
-			assert.equal(repBalanceAfter.toNumber(), params[repTokensRewardGuestIndex].toNumber());
+			assert.equal(repBalanceAfter.toNumber(), repTokensRewardGuestIndexParam.toNumber());
 		});
 
 		it("should mint DZTREP to host", async() => {
@@ -248,11 +249,11 @@ contract("DevZenDaoCore", (accounts) => {
 
 			await devZenDao.moveToNextEpisode(false).should.be.fulfilled;
 
-			const params = await devZenDao.params();
+			const repTokensRewardHostIndexParam = await devZenDao.params(web3.sha3("RepTokensReward_Host"));
 			const repTokensRewardHostIndex = 5;
 
 			const repBalanceAfter = await repToken.balanceOf(hostAddr1);
-			assert.equal(repBalanceAfter.toNumber(), params[repTokensRewardHostIndex].toNumber());
+			assert.equal(repBalanceAfter.toNumber(), repTokensRewardHostIndexParam.toNumber());
 		});
 
 		it("should transfer guest's stake back if initial guest has come", async() => {
@@ -297,11 +298,11 @@ contract("DevZenDaoCore", (accounts) => {
 			await increaseTime(60 * 60 * 24 * 7);
 			await devZenDao.moveToNextEpisode(true).should.be.fulfilled;
 
-			const params = await devZenDao.params();
+			const becomeGuestStakeIndexParam = await devZenDao.params(web3.sha3("BecomeGuestStake"));
 			const becomeGuestStakeIndex = 4;
 
 			const contractBalanceAfter = await devZenToken.balanceOf(devZenDao.address);
-			assert.equal(contractBalanceAfter.toNumber() - contractBalanceBefore.toNumber(), params[becomeGuestStakeIndex].toNumber(), "5 DZT should be burnt");
+			assert.equal(contractBalanceAfter.toNumber() - contractBalanceBefore.toNumber(), becomeGuestStakeIndexParam.toNumber(), "5 DZT should be burnt");
 		});
 	});
 
