@@ -32,6 +32,7 @@
 		"solidity-coverage": "^0.5.5",
 		"truffle": "^4.1.8",
 		"truffle-hdwallet-provider": "0.0.5",
+		"utf8": "^3.0.0",
 		"zeppelin-solidity": "^1.9.0"
 	}
 }

@@ -18,8 +18,8 @@ import "./DevZenDaoCore.sol";
  */
 contract DevZenDaoTestable is DevZenDaoCore {
 
-	constructor(IDaoBase _daoBase, address[] _tokens, Params _params) public 
-		DevZenDaoCore(_daoBase, _tokens, _params) {}
+	constructor(IDaoBase _daoBase, address[] _tokens) public 
+		DevZenDaoCore(_daoBase, _tokens) {}
 
 	// --------------------------------------------- 
 	// These methods should be called by DevZen team:
@@ -28,8 +28,8 @@ contract DevZenDaoTestable is DevZenDaoCore {
 	/**
 	 * @dev Change the DAO parameters
 	*/
-	function updateDaoParams(Params _params) public {
-		super._updateDaoParams(_params);
+	function setParam(bytes32 _param, uint _value) public {
+		super._setParam(_param, _value);
 	}
 
 	/**

@@ -13,9 +13,8 @@ contract DevZenDao is DevZenDaoCore {
 
 	constructor(
 		IDaoBase _daoBase,
-		address[] _tokens, 
-		Params _params
-	) public DevZenDaoCore(_daoBase, _tokens, _params) {}
+		address[] _tokens
+	) public DevZenDaoCore(_daoBase, _tokens) {}
 
 	// --------------------------------------------- 
 	// These methods should be called by DevZen team:
@@ -26,8 +25,8 @@ contract DevZenDao is DevZenDaoCore {
 	 * This method should require voting!
 	 * Notice: DevZen_updateDaoParams is a custom action!
 	*/
-	function updateDaoParams(Params _params) public isCanDo(DEV_ZEN_UPDATE_DAO_PARAMS) {
-		super._updateDaoParams(_params);
+	function setParam(bytes32 _param, uint _value) public isCanDo(DEV_ZEN_UPDATE_DAO_PARAMS) {
+		super._setParam(_param, _value);
 	}
 
 	/**

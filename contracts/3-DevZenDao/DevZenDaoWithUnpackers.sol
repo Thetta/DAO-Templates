@@ -6,8 +6,8 @@ import "@thetta/core/contracts/DaoBase.sol";
 import "./DevZenDao.sol";
 
 contract DevZenDaoWithUnpackers is DevZenDao {
-	constructor(IDaoBase _daoBase, address[] _tokens, Params _params) public 
-	DevZenDao(_daoBase, _tokens, _params){}
+	constructor(IDaoBase _daoBase, address[] _tokens) public 
+	DevZenDao(_daoBase, _tokens){}
 
 	// function updateDaoParamsGeneric(bytes32[] _params) external {
 	// 	address params = address(_params[0]);

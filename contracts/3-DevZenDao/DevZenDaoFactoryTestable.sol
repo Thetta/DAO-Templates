@@ -9,6 +9,7 @@ import "./DevZenDaoFactory.sol";
 import "./DevZenDaoTestable.sol";
 import "./DevZenDaoAutoTestable.sol";
 import "./DevZenDaoWithUnpackersTestable.sol";
+import "./DevZenDaoCore.sol";
 
 contract DevZenDaoFactoryTestable {
 	DevZenDaoWithUnpackersTestable public devZenDao;
@@ -32,23 +33,22 @@ contract DevZenDaoFactoryTestable {
 		store = new DaoStorage(tokens);
 		daoBase = new DaoBase(store);
 
-		DevZenDao.Params memory defaultParams;
-		defaultParams.mintTokensPerWeekAmount = 10 * 10**18;
-		defaultParams.mintReputationTokensPerWeekAmount = 5 * 10**18;
-		defaultParams.oneAdSlotPrice = 2 * 10**18; // Current ETH price is ~$450. One token will be worth ~$45. One ad will cost ~$90 (2 tokens)
-		defaultParams.oneTokenPriceInWei =  10**17; // To become a guest user should put 5 tokens at stake
-		defaultParams.becomeGuestStake = 5 * 10**18;
-		defaultParams.repTokensReward_Host = 2 * 10**18;
-		defaultParams.repTokensReward_Guest = 1 * 10**18;
-		defaultParams.repTokensReward_TeamMembers = 2 * 10**18;
-		
-		createNewContract(IDaoBase(daoBase), tokens, defaultParams);
+		createNewContract(IDaoBase(daoBase), tokens);
 		
 		store.allowActionByAddress(daoBase.MANAGE_GROUPS(),address(this));
 		store.allowActionByAddress(daoBase.ISSUE_TOKENS(),address(devZenDao));
 		store.allowActionByAddress(daoBase.BURN_TOKENS(),address(devZenDao));
 		store.allowActionByAddress(devZenDao.DEV_ZEN_MOVE_TO_NEXT_EPISODE(), _boss);
 		store.transferOwnership(daoBase);
+
+		devZenDao.setParam(devZenDao.MINT_TOKENS_PER_WEEK_AMOUNT(), 10 * 10**18);
+		devZenDao.setParam(devZenDao.MINT_REPUTATION_TOKENS_PER_WEEK_AMOUNT(), 5 * 10**18);
+		devZenDao.setParam(devZenDao.ONE_AD_SLOT_PRICE(), 2 * 10**18); // Current ETH price is ~$450. One token will be worth ~$45. One ad will cost ~$90 (2 tokens)
+		devZenDao.setParam(devZenDao.ONE_TOKEN_PRICE_IN_WEI(),  10**17); //) To become a guest user should put 5 tokens at stake
+		devZenDao.setParam(devZenDao.BECOME_GUEST_STAKE(), 5 * 10**18);
+		devZenDao.setParam(devZenDao.REP_TOKENS_REWARD_HOST(), 2 * 10**18);
+		devZenDao.setParam(devZenDao.REP_TOKENS_REWARD_GUEST(), 1 * 10**18);
+		devZenDao.setParam(devZenDao.REP_TOKENS_REWARD_TEAM_MEMBERS(), 2 * 10**18);
 
 		devZenToken.transferOwnership(daoBase);
 		repToken.transferOwnership(daoBase);
@@ -80,8 +80,8 @@ contract DevZenDaoFactoryTestable {
 		return devZenDao;
 	}
 
-	function createNewContract(IDaoBase _daoBase, address[] _tokens, DevZenDao.Params _defaultParams) internal {
-		devZenDao = new DevZenDaoWithUnpackersTestable(_daoBase, _tokens, _defaultParams);
+	function createNewContract(IDaoBase _daoBase, address[] _tokens) internal {
+		devZenDao = new DevZenDaoWithUnpackersTestable(_daoBase, _tokens);
 	}	
 
 	function setupDevZenDaoAuto() internal {

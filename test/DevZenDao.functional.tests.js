@@ -231,11 +231,11 @@ contract("DevZenDaoAuto", (accounts) => {
 			await increaseTime(60 * 60 * 24 * 7);
 			await devZenDao.moveToNextEpisode(true,{from:boss}).should.be.fulfilled;
 
-			const params = await devZenDao.params();
+			const repTokensRewardGuest = await devZenDao.params(web3.sha3("RepTokensReward_Guest"));
 			const repTokensRewardGuestIndex = 6;
 
 			const repBalanceAfter = await repToken.balanceOf(guest1);
-			assert.equal(repBalanceAfter.toNumber(), params[repTokensRewardGuestIndex].toNumber());
+			assert.equal(repBalanceAfter.toNumber(), repTokensRewardGuest.toNumber());
 		});
 	
 		it("should transfer guest's stake back if initial guest has come", async() => {
