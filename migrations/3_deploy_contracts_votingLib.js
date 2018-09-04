@@ -27,7 +27,10 @@ module.exports = function (deployer) {
 		deployer.link(VotingLib, DevZenDaoTestable);
 		deployer.link(VotingLib, DevZenDaoAuto);
 		deployer.link(VotingLib, DevZenDaoAutoTestable);
-		
+
+		deployer.link(VotingLib, HierarchyDaoFactory);
+		deployer.link(VotingLib, BodDaoFactory);
+				
 		deployer.link(VotingLib, DevZenDaoWithUnpackers);
 		deployer.link(VotingLib, DevZenDaoWithUnpackersTestable);
 	});

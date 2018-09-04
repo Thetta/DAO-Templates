@@ -44,7 +44,7 @@ function fromUtf8(str) {
 
 module.exports = function(deployer, network, accounts) {
 	return deployer.then(async () => {
-		
+	/*	
 		let devZenToken = await StdDaoToken.new("DevZenToken", "DZT", 18, true, true, 100000000000000000000);
 		let repToken = await StdDaoToken.new("DevZenRepToken", "DZTREP", 18, true, true, 100000000000000000000);
 		let store = await DaoStorage.new([devZenToken.address, repToken.address]);
@@ -116,5 +116,6 @@ module.exports = function(deployer, network, accounts) {
 		await devZenDaoAuto.transferOwnership(daoBase.address);
 
 		await daoBase.renounceOwnership();
+	*/
 	});
 };
