@@ -18,7 +18,7 @@ contract DevZenDaoAuto is GenericCaller{
 	event BurnGuestStakeAuto();
 
 	DevZenDaoWithUnpackers devZenDao;
-	constructor(IDaoBase _dao, DevZenDaoWithUnpackers _devZenDao) public GenericCaller(_dao){
+	constructor(IDaoBase _daoBase, DevZenDaoWithUnpackers _devZenDao) public GenericCaller(_daoBase){
 		devZenDao = _devZenDao;
 	}
 

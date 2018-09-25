@@ -10,7 +10,7 @@ import "./DevZenDaoWithUnpackersTestable.sol";
 
 contract DevZenDaoAutoTestable is GenericCaller{
 	DevZenDaoWithUnpackersTestable devZenDao;
-	constructor(IDaoBase _dao, DevZenDaoWithUnpackersTestable _devZenDao) public GenericCaller(_dao){
+	constructor(IDaoBase _daoBase, DevZenDaoWithUnpackersTestable _devZenDao) public GenericCaller(_daoBase){
 		devZenDao = _devZenDao;
 	}
 
@@ -18,7 +18,7 @@ contract DevZenDaoAutoTestable is GenericCaller{
 		bytes32[] memory params = new bytes32[](2);
 		params[0] = _param;
 		params[1] = bytes32(_value);
-		return doAction(devZenDao.DEV_ZEN_UPDATE_DAO_PARAMS(), dao, msg.sender, "updateDaoParamsGeneric(bytes32[])", params);
+		return doAction(devZenDao.DEV_ZEN_UPDATE_DAO_PARAMS(), daoBase, msg.sender, "updateDaoParamsGeneric(bytes32[])", params);
 	}
 
 	function withdrawEtherAuto(address _output) public returns(address proposalOut) {

@@ -4,6 +4,7 @@ pragma solidity ^0.4.24;
 pragma experimental ABIEncoderV2;
 
 import "@thetta/core/contracts/DaoBase.sol";
+import "@thetta/core/contracts/DaoBaseImpersonated.sol";
 import "@thetta/core/contracts/IDaoBase.sol";
 import "@thetta/core/contracts/tokens/StdDaoToken.sol";
 

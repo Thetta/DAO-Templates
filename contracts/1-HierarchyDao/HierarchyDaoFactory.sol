@@ -25,6 +25,7 @@ contract HierarchyDaoFactory {
 	) public {
 		createDao(_boss, _managers, _employees, _outsiders);
 		setupHierarchyDaoAuto();
+		daoBase.renounceOwnership();
 	}
 	
 	function createDao(
@@ -41,15 +42,11 @@ contract HierarchyDaoFactory {
 		daoBase = new DaoBaseWithUnpackers(store);
 		hierarcyDao = new HierarchyDao(IDaoBase(daoBase));
 
-		store.allowActionByAddress(keccak256("manageGroups"), address(this));
+		store.allowActionByAddress(daoBase.MANAGE_GROUPS(), address(this));
 		store.transferOwnership(daoBase);
 		token.transferOwnership(daoBase);
 
-		// 2 - setup
 		setPermissions(_boss, _managers, _employees);
-
-		// 3 - return
-		daoBase.renounceOwnership();
 	}
 
 	function setPermissions(address _boss, address[] _managers, address[] _employees) internal {
@@ -58,22 +55,15 @@ contract HierarchyDaoFactory {
 		daoBase.addGroupMember("Managers", _boss);
 		daoBase.addGroupMember("Employees", _boss);
 
-		daoBase.allowActionByAddress(keccak256("issueTokens"), _boss); 
-		daoBase.allowActionByAddress(keccak256("upgradeDaoContract"), _boss);
+		daoBase.allowActionByAddress(daoBase.ISSUE_TOKENS(), _boss); 
+		daoBase.allowActionByAddress(daoBase.UPGRADE_DAO_CONTRACT(), _boss);
 
 		// 2 - set managers group permission
-		daoBase.allowActionByAnyMemberOfGroup(keccak256("addNewProposal"), "Managers");
-		daoBase.allowActionByAnyMemberOfGroup(keccak256("addNewTask"), "Managers");
-		daoBase.allowActionByAnyMemberOfGroup(keccak256("startTask"), "Managers");
-		daoBase.allowActionByAnyMemberOfGroup(keccak256("startBounty"), "Managers");
-
-		// 3 - set employees group permissions
-		daoBase.allowActionByAnyMemberOfGroup(keccak256("startTask"), "Employees");
-		daoBase.allowActionByAnyMemberOfGroup(keccak256("startBounty"), "Employees");
+		daoBase.allowActionByAnyMemberOfGroup(daoBase.ADD_NEW_PROPOSAL(), "Managers");
 
 		// 4 - the rest is by voting only (requires addNewProposal permission)
 		// so accessable by Managers only even with voting
-		daoBase.allowActionByVoting(keccak256("manageGroups"), token);
+		daoBase.allowActionByVoting(daoBase.MANAGE_GROUPS(), token);
 
 		// 5 - populate groups
 		uint i = 0;
@@ -91,10 +81,10 @@ contract HierarchyDaoFactory {
 
 		// set voring params 1 person 1 vote
 		uint8 VOTING_TYPE_1P1V = 1;
-		hierarchyDaoAuto.setVotingParams(keccak256("manageGroups"), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("Managers"), bytes32(50), bytes32(50), 0);
+		hierarchyDaoAuto.setVotingParams(daoBase.MANAGE_GROUPS(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("Managers"), bytes32(50), bytes32(50), 0);
 
-		daoBase.allowActionByAddress(keccak256("addNewProposal"), hierarchyDaoAuto);
-		daoBase.allowActionByAddress(keccak256("manageGroups"), hierarchyDaoAuto);
+		daoBase.allowActionByAddress(daoBase.ADD_NEW_PROPOSAL(), hierarchyDaoAuto);
+		daoBase.allowActionByAddress(daoBase.MANAGE_GROUPS(), hierarchyDaoAuto);
 
 		hierarchyDaoAuto.transferOwnership(msg.sender);
 	}
