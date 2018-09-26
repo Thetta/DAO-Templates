@@ -1,4 +1,4 @@
-var migrateLibs = require('../node_modules/@thetta/core/scripts/migrateLibs');
+var migrateLibs = require('@thetta/core/scripts/migrateLibs');
 
 module.exports = function (deployer, network, accounts) {
      let additionalContracts = [ "./BodDaoFactory"
