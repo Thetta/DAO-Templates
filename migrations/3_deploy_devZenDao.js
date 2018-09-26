@@ -8,43 +8,14 @@ var DevZenDao = artifacts.require("DevZenDao");
 var DevZenDaoAuto = artifacts.require("DevZenDaoAuto");
 var DevZenDaoCore = artifacts.require("DevZenDaoCore");
 var DevZenDaoWithUnpackers = artifacts.require("DevZenDaoWithUnpackers");
-var utf8 = require('utf8');
+const { uintToBytes32, padToBytes, fromUtf8 } = require("../test/utils/helpers");
 
-function uintToBytes32(n) {
-	n = Number(n).toString(16);
-	while (n.length < 64) {
-		n = "0" + n;
-	}
-	return "0x" + n;
-}
-
-function padToBytes32(n, dir='right', withPrefix=true) {
-	n = n.replace('0x', '');
-	while (n.length < 64) {
-		if(dir == 'right') n = n + "0";
-		if(dir == 'left') n = "0" + n;
-	}
-	return withPrefix ? "0x" + n : n;
-}
-
-function fromUtf8(str) {
-	str = utf8.encode(str);
-	var hex = "";
-	for (var i = 0; i < str.length; i++) {
-		var code = str.charCodeAt(i);
-		if (code === 0) {
-			break;
-		}
-		var n = code.toString(16);
-		hex += n.length < 2 ? '0' + n : n;
-	}
-
-	return padToBytes32(hex);
-};
+let emp1 = '0xfac20ad5f3bfc1748235edf919d473272ca0fd55';
+let emp2 = '0x38ed1a11e4f2fd85995a058e1f65d41a483a662a';
+let emp3 = '0x92bc71cd9a9a6ad3a1dcacc2b8c9eab13f4d547e';
 
 module.exports = function(deployer, network, accounts) {
-	return deployer.then(async () => {
-		
+	return deployer.then(async () => {	
 		let devZenToken = await StdDaoToken.new("DevZenToken", "DZT", 18, true, true, 100000000000000000000);
 		let repToken = await StdDaoToken.new("DevZenRepToken", "DZTREP", 18, true, true, 100000000000000000000);
 		let store = await DaoStorage.new([devZenToken.address, repToken.address]);
@@ -59,6 +30,9 @@ module.exports = function(deployer, network, accounts) {
 	
 		// await await 2 - setup
 		await store.addGroupMember(web3.sha3("DevZenTeam"), accounts[0]);
+		await store.addGroupMember(web3.sha3("DevZenTeam"), emp1);
+		await store.addGroupMember(web3.sha3("DevZenTeam"), emp2);
+		await store.addGroupMember(web3.sha3("DevZenTeam"), emp3);
 
 		await store.transferOwnership(daoBase.address);
 		await devZenDao.setParam(await devZenDao.MINT_TOKENS_PER_WEEK_AMOUNT(), 10 * 1e18);

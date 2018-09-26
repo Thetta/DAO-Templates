@@ -459,4 +459,13 @@ contract("DevZenDaoCore", (accounts) => {
 		});
 	});
 
+	describe("setParam", () => {
+		it("should set param", async() => {
+			let paramHash = await devZenDao.MINT_TOKENS_PER_WEEK_AMOUNT();
+			let paramValueBefore = await devZenDao.params(paramHash);
+			await devZenDao.setParam(paramHash, 2*paramValueBefore.toNumber()).should.be.fulfilled;
+			let paramValueAfter = await devZenDao.params(paramHash);
+			assert.equal(paramValueBefore.toNumber()*2, paramValueAfter.toNumber());
+		});
+	});
 });

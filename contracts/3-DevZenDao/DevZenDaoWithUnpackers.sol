@@ -9,10 +9,11 @@ contract DevZenDaoWithUnpackers is DevZenDao {
 	constructor(IDaoBase _daoBase, address[] _tokens) public 
 	DevZenDao(_daoBase, _tokens){}
 
-	// function updateDaoParamsGeneric(bytes32[] _params) external {
-	// 	address params = address(_params[0]);
-	// 	updateDaoParams(params);
-	// }
+	function updateDaoParamsGeneric(bytes32[] _params) external {
+		bytes32 param = _params[0];
+		uint value = uint(_params[1]);
+		setParam(param, value);
+	}
 
 	function withdrawEtherGeneric(bytes32[] _params) external {
 		address output = address(_params[0]);

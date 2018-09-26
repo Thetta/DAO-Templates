@@ -264,4 +264,19 @@ contract("DevZenDaoAuto", (accounts) => {
 			assert.equal(dztBalanceAfter.toNumber(), 5e18, "guest's 5 DZT were tansfered back to guest");
 		});
 	});
+
+	describe("updateDaoParamsAuto", () => {
+		it("should update param", async() => {
+			let paramHash = await devZenDao.MINT_TOKENS_PER_WEEK_AMOUNT();
+			let paramValueBefore = await devZenDao.params(paramHash);
+			await devZenDaoAuto.updateDaoParamsAuto(paramHash, paramValueBefore.toNumber()*2, {from:teamMember1}).should.be.fulfilled;
+			voting = await getVoting(daoBase,0);
+			await checkVoting(voting, 1, 0, false, false);
+			await voting.vote(true,{from:teamMember2});
+			await checkVoting(voting, 2, 0, true, true);
+
+			let paramValueAfter = await devZenDao.params(paramHash);
+			assert.equal(paramValueBefore.toNumber()*2, paramValueAfter.toNumber());
+		});	
+	});
 });

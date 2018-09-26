@@ -1,8 +1,10 @@
-/*const CheckExceptions = require("./utils/checkexceptions");
+const CheckExceptions = require("./utils/checkexceptions");
 const should = require("./utils/helpers");
 
 const DaoBaseAuto = artifacts.require("DaoBaseAuto");
 const DaoStorage = artifacts.require("DaoStorage");
+const DaoBaseWithUnpackers = artifacts.require("DaoBaseWithUnpackers");
+
 const GenericProposal = artifacts.require("GenericProposal");
 const HierarchyDao = artifacts.require("HierarchyDao");
 const HierarchyDaoFactory = artifacts.require("HierarchyDaoFactory");
@@ -19,57 +21,46 @@ contract('HierarchyDaoFactory', (accounts) => {
 	const outsiderWithoutTokens = accounts[6];
 
 	let hierarchyDaoFactory;
-	let hierarchyDao; // inherits from DaoBaseWithUnpackers
-	// let store;
+	let daoBase;
+	let store;
 	let hierarchyDaoAuto;
 	let informalProposal;
 	let stdDaoToken;
 
 	before(async () => {
 		hierarchyDaoFactory = await HierarchyDaoFactory.new(boss, [manager1, manager2], [employee1, employee2], [outsiderWithTokens, outsiderWithoutTokens], {gasPrice:0, gas:1e13});
-
-		const hierarchyDaoAddress = await hierarchyDaoFactory.dao();
-		hierarchyDao = HierarchyDao.at(hierarchyDaoAddress);
-
-		// const storeAddress = await hierarchyDao.store();
-		// store = DaoStorage.at(storeAddress);
-
-		// const hierarchyDaoAutoAddress = await hierarchyDaoFactory.hierarchyDaoAuto();
-		// hierarchyDaoAuto = DaoBaseAuto.at(hierarchyDaoAutoAddress);
-
-		const stdDaoTokenAddress = await hierarchyDaoFactory.token();
-		stdDaoToken = StdDaoToken.at(stdDaoTokenAddress);
-
+		daoBase = DaoBaseWithUnpackers.at(await hierarchyDaoFactory.daoBase());
+		store = DaoStorage.at(await hierarchyDaoFactory.store());
+		hierarchyDaoAuto = DaoBaseAuto.at(await hierarchyDaoFactory.hierarchyDaoAuto());
+		stdDaoToken = StdDaoToken.at(await hierarchyDaoFactory.token());
 		informalProposal = await InformalProposal.new("ANY_TEXT");
-		await hierarchyDao.easyEditOff();
-
 	});
 
 	it("boss should be a member of 2 groups: managers and employees", async () => {
-		const isManager = await hierarchyDao.isGroupMember("Managers", boss);
-		const isEmployee = await hierarchyDao.isGroupMember("Employees", boss);
+		const isManager = await daoBase.isGroupMember("Managers", boss);
+		const isEmployee = await daoBase.isGroupMember("Employees", boss);
 
 		assert.isTrue(isManager, "boss should be in the managers group");
 		assert.isTrue(isEmployee, "boss should be in the employees group");
 	});
 
 	it("boss should be able to issue new tokens", async() => {
-		await hierarchyDao.issueTokens(stdDaoToken.address, employee1, 100, { from: boss }).should.be.fulfilled;
+		await daoBase.issueTokens(stdDaoToken.address, employee1, 100, { from: boss }).should.be.fulfilled;
 		const employee1Balance = await stdDaoToken.balanceOf(employee1);
 		assert.equal(employee1Balance, 100);
 	});
 
-	// it("manager should be able to add new proposal", async () => {
-	// 	await hierarchyDao.addNewProposal(informalProposal.address, { from: manager1 }).should.be.fulfilled;
-	// });
+	it("manager should be able to add new proposal", async () => {
+		await daoBase.addNewProposal(informalProposal.address, { from: manager1 }).should.be.fulfilled;
+	});
 
 	it("manager should not be able to issue tokens", async() => {
 		await CheckExceptions.checkContractThrows(
-			hierarchyDao.issueTokens, [stdDaoToken.address, employee1, 100, { from: manager1 }]
+			daoBase.issueTokens, [stdDaoToken.address, employee1, 100, { from: manager1 }]
 		);
 	});
 
-	/*it("boss should be able to manage groups only by voting", async () => {
+	it("boss should be able to manage groups only by voting", async () => {
 		await hierarchyDaoAuto.addGroupMemberAuto("ANY_GROUP", employee1, { from: boss }).should.be.fulfilled;
 	});
 
@@ -78,17 +69,16 @@ contract('HierarchyDaoFactory', (accounts) => {
 	});
 
 	it("outsider (not in groups) with tokens should not be able to add new proposal", async () => {
-		await hierarchyDao.issueTokens(stdDaoToken.address, outsiderWithTokens, 100, { from: boss }).should.be.fulfilled;
+		await daoBase.issueTokens(stdDaoToken.address, outsiderWithTokens, 100, { from: boss }).should.be.fulfilled;
 		await CheckExceptions.checkContractThrows(
-			hierarchyDao.addNewProposal, [informalProposal.address, { from: outsiderWithTokens }]
+			daoBase.addNewProposal, [informalProposal.address, { from: outsiderWithTokens }]
 		);
 	});
 
 	it("outsider (not in groups) without tokens should not be able to add new proposal", async () => {
 		await CheckExceptions.checkContractThrows(
-			hierarchyDao.addNewProposal, [informalProposal.address, { from: outsiderWithoutTokens }]
+			daoBase.addNewProposal, [informalProposal.address, { from: outsiderWithoutTokens }]
 		);
 	});
 	
 });
-*/
