@@ -37,7 +37,6 @@ contract DevZenDaoCore is DaoClient {
 	StdDaoToken public devZenToken;
 	StdDaoToken public repToken;
 	NextEpisode public nextEpisode;
-	IDaoBase daoBase;
 
 	bytes32 public constant DEV_ZEN_UPDATE_DAO_PARAMS = keccak256("DevZen_updateDaoParams");
 	bytes32 public constant DEV_ZEN_WITHDRAW_ETHER = keccak256("DevZen_withdrawEther");
@@ -85,7 +84,6 @@ contract DevZenDaoCore is DaoClient {
 	}
 
 	constructor(IDaoBase _daoBase, address[] _tokens) public DaoClient(_daoBase){
-		daoBase = _daoBase;
 		devZenToken = StdDaoToken(_tokens[0]);
 		repToken = StdDaoToken(_tokens[1]);
 	}
