@@ -55,8 +55,4 @@ contract DevZenDaoAutoTestable is GenericCaller{
 		return doAction(devZenDao.DEV_ZEN_MOVE_TO_NEXT_EPISODE(), devZenDao, msg.sender, "moveToNextEpisodeGeneric(bytes32[])", params);
 	}
 
-	function burnGuestStakeAuto() public returns(address proposalOut) {
-		bytes32[] memory params = new bytes32[](0);
-		return doAction(devZenDao.DEV_ZEN_BURN_GUEST_STAKE(), devZenDao, msg.sender, "burnGuestStakeGeneric(bytes32[])", params);
-	}
 }

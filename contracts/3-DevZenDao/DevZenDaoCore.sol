@@ -41,7 +41,6 @@ contract DevZenDaoCore is DaoClient {
 	bytes32 public constant DEV_ZEN_UPDATE_DAO_PARAMS = keccak256("DevZen_updateDaoParams");
 	bytes32 public constant DEV_ZEN_WITHDRAW_ETHER = keccak256("DevZen_withdrawEther");
 	bytes32 public constant DEV_ZEN_SELECT_NEXT_HOST = keccak256("DevZen_selectNextHost");
-	bytes32 public constant DEV_ZEN_BURN_GUEST_STAKE = keccak256("DevZen_burnGuestStake");
 	bytes32 public constant DEV_ZEN_CHANGE_GUEST = keccak256("DevZen_changeGuest");
 	bytes32 public constant DEV_ZEN_EMERGENCY_CHANGE_GUEST = keccak256("DevZen_emergencyChangeGuest");
 	bytes32 public constant DEV_ZEN_MOVE_TO_NEXT_EPISODE = keccak256("DevZen_moveToNextEpisode");

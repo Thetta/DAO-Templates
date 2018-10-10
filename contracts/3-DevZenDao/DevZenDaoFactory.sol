@@ -84,7 +84,6 @@ contract DevZenDaoFactory {
 		daoBase.allowActionByVoting(devZenDao.DEV_ZEN_UPDATE_DAO_PARAMS(), devZenDao.repToken());
 		daoBase.allowActionByVoting(devZenDao.DEV_ZEN_WITHDRAW_ETHER(), devZenDao.repToken());
 		daoBase.allowActionByVoting(devZenDao.DEV_ZEN_SELECT_NEXT_HOST(), devZenDao.repToken());
-		daoBase.allowActionByVoting(devZenDao.DEV_ZEN_BURN_GUEST_STAKE(), devZenDao.repToken());
 		daoBase.allowActionByVoting(devZenDao.DEV_ZEN_CHANGE_GUEST(), devZenDao.repToken());
 		daoBase.allowActionByVoting(devZenDao.DEV_ZEN_EMERGENCY_CHANGE_GUEST(), devZenDao.repToken());
 		daoBase.allowActionByVoting(devZenDao.DEV_ZEN_MOVE_TO_NEXT_EPISODE(), devZenDao.repToken());
@@ -110,7 +109,6 @@ contract DevZenDaoFactory {
 		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_UPDATE_DAO_PARAMS(), devZenDaoAuto);
 		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_WITHDRAW_ETHER(), devZenDaoAuto);
 		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_SELECT_NEXT_HOST(), devZenDaoAuto);
-		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_BURN_GUEST_STAKE(), devZenDaoAuto);
 		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_CHANGE_GUEST(), devZenDaoAuto);
 		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_EMERGENCY_CHANGE_GUEST(), devZenDaoAuto);
 		daoBase.allowActionByAddress(devZenDao.DEV_ZEN_MOVE_TO_NEXT_EPISODE(), devZenDaoAuto);
@@ -121,7 +119,6 @@ contract DevZenDaoFactory {
 		devZenDaoAuto.setVotingParams(devZenDao.DEV_ZEN_UPDATE_DAO_PARAMS(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
 		devZenDaoAuto.setVotingParams(devZenDao.DEV_ZEN_WITHDRAW_ETHER(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
 		devZenDaoAuto.setVotingParams(devZenDao.DEV_ZEN_SELECT_NEXT_HOST(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
-		devZenDaoAuto.setVotingParams(devZenDao.DEV_ZEN_BURN_GUEST_STAKE(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
 		devZenDaoAuto.setVotingParams(devZenDao.DEV_ZEN_CHANGE_GUEST(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
 		devZenDaoAuto.setVotingParams(devZenDao.DEV_ZEN_EMERGENCY_CHANGE_GUEST(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
 		devZenDaoAuto.setVotingParams(devZenDao.DEV_ZEN_MOVE_TO_NEXT_EPISODE(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);

@@ -57,7 +57,6 @@ module.exports = function(deployer, network, accounts) {
 		await daoBase.allowActionByVoting(await devZenDao.DEV_ZEN_UPDATE_DAO_PARAMS(), repToken.address);
 		await daoBase.allowActionByVoting(await devZenDao.DEV_ZEN_WITHDRAW_ETHER(), repToken.address);
 		await daoBase.allowActionByVoting(await devZenDao.DEV_ZEN_SELECT_NEXT_HOST(), repToken.address);
-		await daoBase.allowActionByVoting(await devZenDao.DEV_ZEN_BURN_GUEST_STAKE(), repToken.address);
 		await daoBase.allowActionByVoting(await devZenDao.DEV_ZEN_CHANGE_GUEST(), repToken.address);
 		await daoBase.allowActionByVoting(await devZenDao.DEV_ZEN_EMERGENCY_CHANGE_GUEST(), repToken.address);
 		await daoBase.allowActionByVoting(await devZenDao.DEV_ZEN_MOVE_TO_NEXT_EPISODE(), repToken.address);
@@ -71,7 +70,6 @@ module.exports = function(deployer, network, accounts) {
 		await daoBase.allowActionByAddress(await devZenDao.DEV_ZEN_UPDATE_DAO_PARAMS(), devZenDaoAuto.address);
 		await daoBase.allowActionByAddress(await devZenDao.DEV_ZEN_WITHDRAW_ETHER(), devZenDaoAuto.address);
 		await daoBase.allowActionByAddress(await devZenDao.DEV_ZEN_SELECT_NEXT_HOST(), devZenDaoAuto.address);
-		await daoBase.allowActionByAddress(await devZenDao.DEV_ZEN_BURN_GUEST_STAKE(), devZenDaoAuto.address);
 		await daoBase.allowActionByAddress(await devZenDao.DEV_ZEN_CHANGE_GUEST(), devZenDaoAuto.address);
 		await daoBase.allowActionByAddress(await devZenDao.DEV_ZEN_EMERGENCY_CHANGE_GUEST(), devZenDaoAuto.address);
 		await daoBase.allowActionByAddress(await devZenDao.DEV_ZEN_MOVE_TO_NEXT_EPISODE(), devZenDaoAuto.address);
@@ -82,7 +80,6 @@ module.exports = function(deployer, network, accounts) {
 		await devZenDaoAuto.setVotingParams(await devZenDao.DEV_ZEN_UPDATE_DAO_PARAMS(), VOTING_TYPE_1P1V, uintToBytes32(0), fromUtf8("DevZenTeam"), uintToBytes32(65), uintToBytes32(65), 0);
 		await devZenDaoAuto.setVotingParams(await devZenDao.DEV_ZEN_WITHDRAW_ETHER(), VOTING_TYPE_1P1V, uintToBytes32(0), fromUtf8("DevZenTeam"), uintToBytes32(65), uintToBytes32(65), 0);
 		await devZenDaoAuto.setVotingParams(await devZenDao.DEV_ZEN_SELECT_NEXT_HOST(), VOTING_TYPE_1P1V, uintToBytes32(0), fromUtf8("DevZenTeam"), uintToBytes32(65), uintToBytes32(65), 0);
-		await devZenDaoAuto.setVotingParams(await devZenDao.DEV_ZEN_BURN_GUEST_STAKE(), VOTING_TYPE_1P1V, uintToBytes32(0), fromUtf8("DevZenTeam"), uintToBytes32(65), uintToBytes32(65), 0);
 		await devZenDaoAuto.setVotingParams(await devZenDao.DEV_ZEN_CHANGE_GUEST(), VOTING_TYPE_1P1V, uintToBytes32(0), fromUtf8("DevZenTeam"), uintToBytes32(65), uintToBytes32(65), 0);
 		await devZenDaoAuto.setVotingParams(await devZenDao.DEV_ZEN_EMERGENCY_CHANGE_GUEST(), VOTING_TYPE_1P1V, uintToBytes32(0), fromUtf8("DevZenTeam"), uintToBytes32(65), uintToBytes32(65), 0);
 		await devZenDaoAuto.setVotingParams(await devZenDao.DEV_ZEN_MOVE_TO_NEXT_EPISODE(), VOTING_TYPE_1P1V, uintToBytes32(0), fromUtf8("DevZenTeam"), uintToBytes32(65), uintToBytes32(65), 0);

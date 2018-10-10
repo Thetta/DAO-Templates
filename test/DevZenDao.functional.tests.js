@@ -45,7 +45,7 @@ contract("DevZenDaoAuto", (accounts) => {
 	let daoBase;
 
 	beforeEach(async () => {
-		devZenDaoFactory = await DevZenDaoFactory.new(boss, [teamMember1, teamMember2], {gas:1e13, gasPrice:0});
+		devZenDaoFactory = await DevZenDaoFactory.new(boss, [teamMember1, teamMember2]);
 		devZenDao = DevZenDao.at(await devZenDaoFactory.devZenDao());
 		daoBase = DaoBase.at(await devZenDaoFactory.daoBase());
 		devZenToken = StdDaoToken.at(await devZenDao.devZenToken());
@@ -87,24 +87,6 @@ contract("DevZenDaoAuto", (accounts) => {
 			assert.equal(nextEpisode[nextShowHostIndex], boss);
 		});
 
-	});
-
-	describe("burnGuestStakeAuto", () => {
-		it("should burn guest's stake", async() => {
-			await devZenDao.moveToNextEpisode(false,{from:boss}).should.be.fulfilled;
-
-			const balanceBeforeBurn = await devZenToken.balanceOf(devZenDao.address);
-			assert.equal(balanceBeforeBurn.toNumber(), 10e18, "on new episode 10 DZT are minted to contract");
-
-			await devZenDaoAuto.burnGuestStakeAuto({from:teamMember1}).should.be.fulfilled;
-			voting = await getVoting(daoBase,0);	
-			await checkVoting(voting, 1, 0, false, false);
-			await voting.vote(true,{from:teamMember2});
-			await checkVoting(voting, 2, 0, true, true);
-
-			const balanceAfterBurn = await devZenToken.balanceOf(devZenDao.address);
-			assert.equal(balanceAfterBurn.toNumber(), 5e18, "burns 5 DZT at guest's stake");
-		});
 	});
 
 	describe("changeTheGuestAuto", () => {

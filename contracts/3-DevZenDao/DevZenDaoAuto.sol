@@ -15,7 +15,6 @@ contract DevZenDaoAuto is GenericCaller{
 	event ChangeTheGuestAuto();
 	event Emergency_ChangeTheGuestAuto();
 	event MoveToNextEpisodeAuto();
-	event BurnGuestStakeAuto();
 
 	DevZenDaoWithUnpackers devZenDao;
 	constructor(IDaoBase _daoBase, DevZenDaoWithUnpackers _devZenDao) public GenericCaller(_daoBase){
@@ -69,9 +68,4 @@ contract DevZenDaoAuto is GenericCaller{
 		return doAction(devZenDao.DEV_ZEN_MOVE_TO_NEXT_EPISODE(), devZenDao, msg.sender, "moveToNextEpisodeGeneric(bytes32[])", params);
 	}
 
-	function burnGuestStakeAuto() public returns(address proposalOut) {
-		emit BurnGuestStakeAuto();
-		bytes32[] memory params = new bytes32[](0);
-		return doAction(devZenDao.DEV_ZEN_BURN_GUEST_STAKE(), devZenDao, msg.sender, "burnGuestStakeGeneric(bytes32[])", params);
-	}
 }
