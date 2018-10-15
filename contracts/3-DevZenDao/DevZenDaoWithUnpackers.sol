@@ -40,7 +40,4 @@ contract DevZenDaoWithUnpackers is DevZenDao {
 		moveToNextEpisode(guestHasCome==1);
 	}
 
-	function burnGuestStakeGeneric(bytes32[] _params) external {
-		burnGuestStake();
-	}
 }

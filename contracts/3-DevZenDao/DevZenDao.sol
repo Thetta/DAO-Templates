@@ -49,15 +49,6 @@ contract DevZenDao is DevZenDaoCore {
 	}
 
 	/**
-	 * @dev Guest did not appear -> penalize him) 
-	 * This method should require voting!
-	 * Notice: DevZen_selectNextHost is a custom action!
-	*/
-	function burnGuestStake() public isCanDo(DEV_ZEN_BURN_GUEST_STAKE) {
-		super._burnGuestStake();
-	}
-
-	/**
 	 * @dev Changes the guest in "legal" way
 	 * @param _guest New guest address
 	 * When guest is changed via this function we ensure that stake is returned to previous guest.
