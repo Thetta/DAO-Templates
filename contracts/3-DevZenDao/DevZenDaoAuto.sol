@@ -2,13 +2,13 @@ pragma solidity ^0.4.24;
 // to enable Params passing to constructor and method
 pragma experimental ABIEncoderV2;
 
-import "@thetta/core/contracts/utils/GenericCaller.sol";
+import "@thetta/core/contracts/DaoBaseAuto.sol";
 
 import "./DevZenDao.sol";
 import "./DevZenDaoCore.sol";
 import "./DevZenDaoWithUnpackers.sol";
 
-contract DevZenDaoAuto is GenericCaller{
+contract DevZenDaoAuto is DaoBaseAuto{
 	event UpdateDaoParamsAuto();
 	event WithdrawEtherAuto();
 	event SelectNextHostAuto();
@@ -17,7 +17,7 @@ contract DevZenDaoAuto is GenericCaller{
 	event MoveToNextEpisodeAuto();
 
 	DevZenDaoWithUnpackers devZenDao;
-	constructor(IDaoBase _daoBase, DevZenDaoWithUnpackers _devZenDao) public GenericCaller(_daoBase){
+	constructor(IDaoBase _daoBase, DevZenDaoWithUnpackers _devZenDao) public DaoBaseAuto(_daoBase){
 		devZenDao = _devZenDao;
 	}
 
