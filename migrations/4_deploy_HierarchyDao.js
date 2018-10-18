@@ -15,10 +15,10 @@ let emp3 = '0x92bc71cd9a9a6ad3a1dcacc2b8c9eab13f4d547e';
 
 module.exports = function(deployer, network, accounts) {
 	return deployer.then(async () => {	
-		let token = await StdDaoToken.new("StdToken", "STD", 18, true, true, 100000000000000000000);
-		let store = await DaoStorage.new([token.address]);
-		let daoBase = await DaoBase.new(store.address);
-		let hierarcyDao = await HierarchyDao.new(daoBase.address);
+		let token = await deployer.deploy(StdDaoToken, "StdToken", "STD", 18, true, true, 100000000000000000000);
+		let store = await deployer.deploy(DaoStorage, [token.address]);
+		let daoBase = await deployer.deploy(DaoBase, store.address);
+		let hierarchyDao = await deployer.deploy(HierarchyDao, daoBase.address);
 
 		await store.allowActionByAddress(await daoBase.MANAGE_GROUPS(), accounts[0]);
 		await store.transferOwnership(daoBase.address);
@@ -39,7 +39,7 @@ module.exports = function(deployer, network, accounts) {
 		await daoBase.addGroupMember("Employees", emp2);
 		await daoBase.addGroupMember("Employees", emp3);
 
-		let hierarchyDaoAuto = await DaoBaseAuto.new(daoBase.address);
+		let hierarchyDaoAuto = await deployer.deploy(DaoBaseAuto, daoBase.address);
 
 		// set voring params 1 person 1 vote
 		let VOTING_TYPE_1P1V = 1;

@@ -15,12 +15,12 @@ let emp2 = '0x38ed1a11e4f2fd85995a058e1f65d41a483a662a';
 let emp3 = '0x92bc71cd9a9a6ad3a1dcacc2b8c9eab13f4d547e';
 
 module.exports = function(deployer, network, accounts) {
-	return deployer.then(async () => {	
-		let devZenToken = await StdDaoToken.new("DevZenToken", "DZT", 18, true, true, 100000000000000000000);
-		let repToken = await StdDaoToken.new("DevZenRepToken", "DZTREP", 18, true, true, 100000000000000000000);
-		let store = await DaoStorage.new([devZenToken.address, repToken.address]);
-		let daoBase = await DaoBase.new(store.address);
-		let devZenDao = await DevZenDaoWithUnpackers.new(daoBase.address, [devZenToken.address, repToken.address]);
+	return deployer.then(async () => {
+		let devZenToken = await deployer.deploy(StdDaoToken, "DevZenToken", "DZT", 18, true, true, 100000000000000000000);
+		let repToken = await deployer.deploy(StdDaoToken, "DevZenRepToken", "DZTREP", 18, true, true, 100000000000000000000);
+		let store = await deployer.deploy(DaoStorage, [devZenToken.address, repToken.address]);
+		let daoBase = await deployer.deploy(DaoBase, store.address);
+		let devZenDao = await deployer.deploy(DevZenDaoWithUnpackers, daoBase.address, [devZenToken.address, repToken.address]);
 
 		await store.allowActionByAddress(await daoBase.MANAGE_GROUPS(),accounts[0]);
 		await store.allowActionByAddress(await daoBase.ISSUE_TOKENS(),devZenDao.address);
@@ -61,7 +61,7 @@ module.exports = function(deployer, network, accounts) {
 		await daoBase.allowActionByVoting(await devZenDao.DEV_ZEN_EMERGENCY_CHANGE_GUEST(), repToken.address);
 		await daoBase.allowActionByVoting(await devZenDao.DEV_ZEN_MOVE_TO_NEXT_EPISODE(), repToken.address);
 	
-		let devZenDaoAuto = await DevZenDaoAuto.new(daoBase.address, devZenDao.address);
+		let devZenDaoAuto = await deployer.deploy(DevZenDaoAuto, daoBase.address, devZenDao.address);
 
 		await daoBase.allowActionByAddress(await daoBase.ADD_NEW_PROPOSAL(), devZenDaoAuto.address);
 		await daoBase.allowActionByAddress(await daoBase.MANAGE_GROUPS(), devZenDaoAuto.address);
