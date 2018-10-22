@@ -49,6 +49,7 @@ contract DevZenDaoFactory {
 		createNewContract(IDaoBase(daoBase), tokens);
 		
 		store.allowActionByAddress(daoBase.MANAGE_GROUPS(),address(this));
+		store.allowActionByAddress(daoBase.MANAGE_GROUPS(),address(devZenDao));
 		store.allowActionByAddress(daoBase.ISSUE_TOKENS(),address(devZenDao));
 		store.allowActionByAddress(daoBase.BURN_TOKENS(),address(devZenDao));
 		store.allowActionByAddress(devZenDao.DEV_ZEN_MOVE_TO_NEXT_EPISODE(), _boss);

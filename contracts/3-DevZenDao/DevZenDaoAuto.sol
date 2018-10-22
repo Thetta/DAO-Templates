@@ -68,4 +68,20 @@ contract DevZenDaoAuto is DaoBaseAuto{
 		return doAction(devZenDao.DEV_ZEN_MOVE_TO_NEXT_EPISODE(), devZenDao, msg.sender, "moveToNextEpisodeGeneric(bytes32[])", params);
 	}
 
+
+	function addGroupMemberAuto(string _group, address _a) public returns(address proposalOut) {
+		bytes32[] memory params = new bytes32[](2);
+
+		params[0] = UtilsLib.stringToBytes32(_group);
+		params[1] = bytes32(_a);
+
+		return doAction(
+			DaoBase(address(daoBase)).MANAGE_GROUPS(), 
+			devZenDao, 
+			msg.sender,
+			"addGroupMemberGeneric(bytes32[])",
+			params
+		);
+	}
+
 }

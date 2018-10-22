@@ -55,8 +55,10 @@ contract("DevZenDaoAuto", (accounts) => {
 
 	describe("addGroupMemberAuto()", () => {
 		it("should add group member after successful voting", async() => {
+			var members = await daoBase.getGroupMembers("DevZenTeam");
+			console.log('members before ', members);			
+
 			await devZenDaoAuto.addGroupMemberAuto("DevZenTeam", guest1, {from: boss}).should.be.fulfilled;
-			
 			const proposalAddress = await daoBase.getProposalAtIndex(0);
 			const proposal = await IProposal.at(proposalAddress);
 			const votingAddress = await proposal.getVoting();
@@ -64,8 +66,8 @@ contract("DevZenDaoAuto", (accounts) => {
 
 			await voting.vote(true, {from: teamMember1});
 
-			let members = await daoBase.getGroupMembers("DevZenTeam");
-			console.log(members);
+			var members = await daoBase.getGroupMembers("DevZenTeam");
+			console.log('members after ', members);
 		});
 	});
 

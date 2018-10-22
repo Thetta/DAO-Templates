@@ -40,4 +40,9 @@ contract DevZenDaoWithUnpackers is DevZenDao {
 		moveToNextEpisode(guestHasCome==1);
 	}
 
+	function addGroupMemberGeneric(bytes32[] _params) external {
+		string memory _groupName = UtilsLib.bytes32ToString(_params[0]);
+		address a = address(_params[1]);
+		_addGroupMember(_groupName, a);
+	}
 }

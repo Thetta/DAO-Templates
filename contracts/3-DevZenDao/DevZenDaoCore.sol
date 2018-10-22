@@ -65,6 +65,7 @@ contract DevZenDaoCore is DaoClient {
 	event DevZenDaoCore_BuyTokens();
 	event DevZenDaoCore_IsOneWeekPassed();
 	event DevZenDaoCore_SetGuest(address _guest);
+	event DevZenDaoCore_AddGroupMember(string _groupName, address _member);
 
 	event SetParam(bytes32 _param, uint _value);
 
@@ -125,6 +126,11 @@ contract DevZenDaoCore is DaoClient {
 		emit DevZenDaoCore_BurnGuestStake();	
 		daoBase.burnTokens(devZenToken, address(this), params[BECOME_GUEST_STAKE]);
 	}
+
+	function _addGroupMember(string _groupName, address _member) internal  {
+		emit DevZenDaoCore_AddGroupMember(_groupName, _member);
+		daoBase.addGroupMember(_groupName, _member);
+	}	
 
 	/**
 	 * @dev Changes the guest in "legal" way
