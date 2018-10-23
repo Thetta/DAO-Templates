@@ -53,6 +53,35 @@ contract("DevZenDaoAuto", (accounts) => {
 		devZenDaoAuto = DevZenDaoAuto.at(await devZenDaoFactory.devZenDaoAuto());
 	});
 
+	describe("addGroupMemberAuto", () => {
+		it("should add a new group member on successful voting", async() => {
+			await devZenDaoAuto.addGroupMemberAuto("DevZenTeam", guest1, {from: boss}).should.be.fulfilled;
+			const voting = await getVoting(daoBase, 0);
+
+			const membersBefore = await daoBase.getGroupMembers("DevZenTeam");
+			assert.equal(membersBefore.length, 3);
+			
+			await voting.vote(true, {from: teamMember1}).should.be.fulfilled;
+
+			const membersAfter = await daoBase.getGroupMembers("DevZenTeam");
+			assert.equal(membersAfter.length, 4);
+			assert.equal(membersAfter[3], guest1);
+		});
+
+		it("should not add a new group member on failed voting", async() => {
+			await devZenDaoAuto.addGroupMemberAuto("DevZenTeam", guest1, {from: boss}).should.be.fulfilled;
+			const voting = await getVoting(daoBase, 0);
+
+			const membersBefore = await daoBase.getGroupMembers("DevZenTeam");
+			assert.equal(membersBefore.length, 3);
+			
+			await voting.vote(false, {from: teamMember1}).should.be.fulfilled;
+
+			const membersAfter = await daoBase.getGroupMembers("DevZenTeam");
+			assert.equal(membersAfter.length, 3);
+		});
+	});
+
 	describe("withdrawEtherAuto", () => {
 		it("should withdraw ether to specified address", async() => {
 			await devZenDao.moveToNextEpisode(false, {from:boss}).should.be.fulfilled;
@@ -244,6 +273,34 @@ contract("DevZenDaoAuto", (accounts) => {
 
 			const dztBalanceAfter = await devZenToken.balanceOf(guest1);
 			assert.equal(dztBalanceAfter.toNumber(), 5e18, "guest's 5 DZT were tansfered back to guest");
+		});
+	});
+
+	describe("removeGroupMemberAuto", () => {
+		it("should remove group member on successful voting", async() => {
+			await devZenDaoAuto.removeGroupMemberAuto("DevZenTeam", teamMember2, {from: boss}).should.be.fulfilled;
+			const voting = await getVoting(daoBase, 0);
+
+			const membersBefore = await daoBase.getGroupMembers("DevZenTeam");
+			assert.equal(membersBefore.length, 3);
+			
+			await voting.vote(true, {from: teamMember1}).should.be.fulfilled;
+
+			const membersAfter = await daoBase.getGroupMembers("DevZenTeam");
+			assert.equal(membersAfter.length, 2);
+		});
+
+		it("should not remove group member on failed voting", async() => {
+			await devZenDaoAuto.removeGroupMemberAuto("DevZenTeam", teamMember2, {from: boss}).should.be.fulfilled;
+			const voting = await getVoting(daoBase, 0);
+
+			const membersBefore = await daoBase.getGroupMembers("DevZenTeam");
+			assert.equal(membersBefore.length, 3);
+			
+			await voting.vote(false, {from: teamMember1}).should.be.fulfilled;
+
+			const membersAfter = await daoBase.getGroupMembers("DevZenTeam");
+			assert.equal(membersAfter.length, 3);
 		});
 	});
 
