@@ -3,7 +3,7 @@ pragma solidity ^0.4.22;
 // to enable Params passing to constructor and method
 pragma experimental ABIEncoderV2;
 
-import "@thetta/core/contracts/DaoBase.sol";
+import "@thetta/core/contracts/DaoBaseWithUnpackers.sol";
 import "@thetta/core/contracts/IDaoBase.sol";
 import "@thetta/core/contracts/DaoStorage.sol";
 import "@thetta/core/contracts/DaoBaseAuto.sol";
@@ -26,7 +26,7 @@ import "./DevZenDaoWithUnpackers.sol";
 
 contract DevZenDaoFactory {
 	DevZenDaoWithUnpackers public devZenDao;
-	DaoBase public daoBase;
+	DaoBaseWithUnpackers public daoBase;
 	DaoStorage store;
 	DevZenDaoAuto public devZenDaoAuto;
 
@@ -44,7 +44,7 @@ contract DevZenDaoFactory {
 		tokens.push(address(devZenToken));
 		tokens.push(address(repToken));
 		store = new DaoStorage(tokens);
-		daoBase = new DaoBase(store);
+		daoBase = new DaoBaseWithUnpackers(store);
 
 		createNewContract(IDaoBase(daoBase), tokens);
 		
@@ -115,6 +115,7 @@ contract DevZenDaoFactory {
 
 		uint VOTING_TYPE_1P1V = 1;
 		devZenDaoAuto.setVotingParams(daoBase.MANAGE_GROUPS(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
+		devZenDaoAuto.setVotingParams(daoBase.REMOVE_GROUP_MEMBER(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
 		devZenDaoAuto.setVotingParams(daoBase.UPGRADE_DAO_CONTRACT(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
 		devZenDaoAuto.setVotingParams(devZenDao.DEV_ZEN_UPDATE_DAO_PARAMS(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
 		devZenDaoAuto.setVotingParams(devZenDao.DEV_ZEN_WITHDRAW_ETHER(), VOTING_TYPE_1P1V, bytes32(0), UtilsLib.stringToBytes32("DevZenTeam"), bytes32(65), bytes32(65), 0);
