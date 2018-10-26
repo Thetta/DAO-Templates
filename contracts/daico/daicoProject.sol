@@ -11,13 +11,30 @@ import "@thetta/core/contracts/tokens/StdDaoToken.sol";
 // DaicoProject is funds owner
 contract DaicoProject {
 
-	mapping(uint => OneTimeFund) stages;
-	WeiTopdownSplitter splitter;
+	mapping(uint => WeiAbsoluteExpense) stages;
 	uint stageAmount;
 	uint stagesCount;
 	address projectOwner;
 	address daicoAddress;
 	uint currentStage = 0;
+	ProjectState projectState = ProjectState.Basic;
+
+	enum ProjectState {
+		Basic,
+		VotingWithA50Quorum,
+		ChangesNeeded,
+		Rejected
+	}
+
+	modifier onlyDaico() {
+		require(msg.sender==_daicoAddress);
+		_;
+	}
+
+	modifier onlyProjectOwner() {
+		require(msg.sender==_projectOwner);
+		_;
+	}
 
 	constructor(uint _stagesCount, uint _stageAmount, address _projectOwner, address _daicoAddress) {
 		stageAmount = _stageAmount;
@@ -25,10 +42,8 @@ contract DaicoProject {
 		projectOwner = _projectOwner;
 		daicoAddress = _daicoAddress;
 
-		WeiTopdownSplitter splitter = new WeiTopdownSplitter();
-
 		for(uint i=0; i++; i<_stagesCount) {
-			OneTimeFund stage = new OneTimeFund(_stageAmount);
+			WeiAbsoluteExpense stage = new WeiAbsoluteExpense(_stageAmount);
 			if(i!=0) {
 				stage.Close();
 			}
@@ -38,20 +53,21 @@ contract DaicoProject {
 		}
 	}
 
-	function flushFundsFromStage(uint _stageNum) {
-		require(msg.sender==_projectOwner);
+	function flushFundsFromStage(uint _stageNum) onlyProjectOwner {
 		stages[_stageNum].flushTo(_projectOwner);
 	}
 
-	function goToNextStage() {
-		require(msg.sender==_daicoAddress);
+	function goToNextStage() onlyDaico {
 		require(currentStage<stagesCount);
 		currentStage++;
 		stages[currentStage].Open();
 	}
 
-	function getAmountForStage() public payable {
-		require(msg.sender==_daicoAddress);
-		splitter.processFunds.value(msg.value)(msg.value);
+	function getAmountForStage() public payable onlyDaico {
+		stages[currentStage].processFunds.value(msg.value)(msg.value);		
+	}
+
+	function setProjectState(ProjectState _state) public onlyDaico {
+		projectState = _state;
 	}
 }

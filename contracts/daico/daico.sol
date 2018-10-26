@@ -36,22 +36,15 @@ import "@thetta/core/contracts/tokens/StdDaoToken.sol";
 
 
 contract Daico is DaoClient {
-	mapping(uint => ProjectRecord) public projects;
+	mapping(uint => DaicoProject) public projects;
 	uint projectsCount;
 
-	struct ProjectRecord {
-		DaicoProject daicoProject;
-		ProjectState projectState;
-	}
-
-	enum ProjectState {
-		Basic,
-		VotingWithA50Quorum,
-		ChangesNeeded,
-		Rejected
-	}
-
 	bytes32 ACCEPT_NEW_STAGE = keccak256("acceptNewStage");
+	bytes32 ACCEPT_NEW_STAGE_LESS_QUORUM = keccak256("acceptNewStage");
+
+	modifier previousVotingQuorumNotReached(uint _projectNum) {
+
+	}
 
 	constructor(IDaoBase _daoBase) DaoClient(_daoBase) {
 
@@ -59,7 +52,7 @@ contract Daico is DaoClient {
 
 	function addNewProject(uint _stagesCount, uint _stageAmount) {
 		DaicoProject project = new DaicoProject(_stagesCount, _stageAmount, msg.sender);
-		projects[projectsCount] =ProjectRecord(project, ProjectState.Basic);
+		projects[projectsCount] = project;
 		projectsCount++;
 		return project;
 	}
@@ -67,18 +60,23 @@ contract Daico is DaoClient {
 	function addAmountToFund() public payable {}
 
 	function goToNewStage(uint _projectNum) public isCanDo(ACCEPT_NEW_STAGE) {
-		uint amount = projects[_projectNum].daicoProject.stageAmount;
-		projects[_projectNum].daicoProject.getAmountForStage.value(amount)();
-		projects[_projectNum].daicoProject.goToNextStage();
+		uint amount = projects[_projectNum].stageAmount;
+		projects[_projectNum].getAmountForStage.value(amount)();
+		projects[_projectNum].goToNextStage();
 	}
 
 
-	function goToNewStageWithALessQuorum(uint _projectNum) public {
-		require(msg.sender == projects[_projectNum].daicoProject.projectOwner);
+	function goToNewStageLessQuorum(uint _projectNum) public 
+		previousVotingQuorumNotReached(_projectNum) 
+		isCanDo(ACCEPT_NEW_STAGE_LESS_QUORUM) 
+	{
+		require(msg.sender == projects[_projectNum].projectOwner);
 		// TODO: require quorum is not reached
-		projects[_projectNum].projectState = ProjectState.VotingWithALessQuorum;
+		projects[_projectNum].setProjectState(projects[_projectNum].ProjectState.VotingWithALessQuorum);
 
 		// TODO: как выставить уменьшенный кворум именно для этого голосования? 
 		//       никак, нужно сделать другое голосование с другими параметрами
 	}
+
+
 }
