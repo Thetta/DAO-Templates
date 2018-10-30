@@ -6,18 +6,18 @@ pragma experimental ABIEncoderV2;
 import "@thetta/core/contracts/DaoClient.sol";
 import "@thetta/core/contracts/IDaoBase.sol";
 import "@thetta/core/contracts/tokens/StdDaoToken.sol";
-
+import "@thetta/core/contracts/moneyflow/ether/WeiAbsoluteExpense.sol";
 
 // DaicoProject is funds owner
 contract DaicoProject {
 
 	mapping(uint => WeiAbsoluteExpense) stages;
-	uint stageAmount;
-	uint stagesCount;
-	address projectOwner;
-	address daicoAddress;
-	uint currentStage = 0;
-	ProjectState projectState = ProjectState.Basic;
+	uint public stageAmount;
+	uint public stagesCount;
+	address public projectOwner;
+	address public daicoAddress;
+	uint public currentStage = 0;
+	ProjectState public projectState = ProjectState.Basic;
 
 	enum ProjectState {
 		Basic,
@@ -27,12 +27,12 @@ contract DaicoProject {
 	}
 
 	modifier onlyDaico() {
-		require(msg.sender==_daicoAddress);
+		require(msg.sender==daicoAddress);
 		_;
 	}
 
 	modifier onlyProjectOwner() {
-		require(msg.sender==_projectOwner);
+		require(msg.sender==projectOwner);
 		_;
 	}
 
@@ -42,25 +42,20 @@ contract DaicoProject {
 		projectOwner = _projectOwner;
 		daicoAddress = _daicoAddress;
 
-		for(uint i=0; i++; i<_stagesCount) {
+		for(uint i=0; i<_stagesCount; i++) {
 			WeiAbsoluteExpense stage = new WeiAbsoluteExpense(_stageAmount);
-			if(i!=0) {
-				stage.Close();
-			}
-
-			splitter.addChild(IWeiReceiver(stage));
+			
 			stages[i] = stage;
 		}
 	}
 
 	function flushFundsFromStage(uint _stageNum) onlyProjectOwner {
-		stages[_stageNum].flushTo(_projectOwner);
+		stages[_stageNum].flushTo(projectOwner);
 	}
 
 	function goToNextStage() onlyDaico {
 		require(currentStage<stagesCount);
 		currentStage++;
-		stages[currentStage].Open();
 	}
 
 	function getAmountForStage() public payable onlyDaico {

@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import "@thetta/core/contracts/DaoClient.sol";
 import "@thetta/core/contracts/IDaoBase.sol";
 import "@thetta/core/contracts/tokens/StdDaoToken.sol";
+import "./DaicoProject.sol";
 
 /* 
 	Описание
@@ -38,29 +39,30 @@ import "@thetta/core/contracts/tokens/StdDaoToken.sol";
 contract Daico is DaoClient {
 	mapping(uint => DaicoProject) public projects;
 	uint projectsCount;
+	address[] public investors;
 
 	bytes32 ACCEPT_NEW_STAGE = keccak256("acceptNewStage");
 	bytes32 ACCEPT_NEW_STAGE_LESS_QUORUM = keccak256("acceptNewStage");
 
 	modifier previousVotingQuorumNotReached(uint _projectNum) {
-
+		_;
 	}
 
-	constructor(IDaoBase _daoBase) DaoClient(_daoBase) {
-
+	constructor(IDaoBase _daoBase, address[] _investors) DaoClient(_daoBase) {
+		investors = _investors;
 	}
 
 	function addNewProject(uint _stagesCount, uint _stageAmount) {
-		DaicoProject project = new DaicoProject(_stagesCount, _stageAmount, msg.sender);
+		DaicoProject project = new DaicoProject(_stagesCount, _stageAmount, msg.sender, address(this));
 		projects[projectsCount] = project;
 		projectsCount++;
-		return project;
+		// return project;
 	}
 
 	function addAmountToFund() public payable {}
 
 	function goToNewStage(uint _projectNum) public isCanDo(ACCEPT_NEW_STAGE) {
-		uint amount = projects[_projectNum].stageAmount;
+		uint amount = projects[_projectNum].stageAmount();
 		projects[_projectNum].getAmountForStage.value(amount)();
 		projects[_projectNum].goToNextStage();
 	}
@@ -70,9 +72,11 @@ contract Daico is DaoClient {
 		previousVotingQuorumNotReached(_projectNum) 
 		isCanDo(ACCEPT_NEW_STAGE_LESS_QUORUM) 
 	{
-		require(msg.sender == projects[_projectNum].projectOwner);
+		require(msg.sender == projects[_projectNum].projectOwner());
 		// TODO: require quorum is not reached
-		projects[_projectNum].setProjectState(projects[_projectNum].ProjectState.VotingWithALessQuorum);
+		DaicoProject.ProjectState projectState = DaicoProject.ProjectState.Basic;
+
+		projects[_projectNum].setProjectState(projectState);
 
 		// TODO: как выставить уменьшенный кворум именно для этого голосования? 
 		//       никак, нужно сделать другое голосование с другими параметрами
