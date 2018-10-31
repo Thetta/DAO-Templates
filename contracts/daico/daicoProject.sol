@@ -10,21 +10,16 @@ import "@thetta/core/contracts/moneyflow/ether/WeiAbsoluteExpense.sol";
 
 // DaicoProject is funds owner
 contract DaicoProject {
-
 	mapping(uint => WeiAbsoluteExpense) stages;
 	uint public stageAmount;
 	uint public stagesCount;
 	address public projectOwner;
 	address public daicoAddress;
 	uint public currentStage = 0;
-	ProjectState public projectState = ProjectState.Basic;
 
-	enum ProjectState {
-		Basic,
-		VotingWithA50Quorum,
-		ChangesNeeded,
-		Rejected
-	}
+	uint public blockUntil = 0;
+	bool public isRemoved = false;
+
 
 	modifier onlyDaico() {
 		require(msg.sender==daicoAddress);
@@ -62,7 +57,11 @@ contract DaicoProject {
 		stages[currentStage].processFunds.value(msg.value)(msg.value);		
 	}
 
-	function setProjectState(ProjectState _state) public onlyDaico {
-		projectState = _state;
+	function setBlock(uint _blockUntil) public onlyDaico {
+		blockUntil = _blockUntil;
 	}
+
+	function removeProject() public onlyDaico {
+		isRemoved = true;
+	}	
 }

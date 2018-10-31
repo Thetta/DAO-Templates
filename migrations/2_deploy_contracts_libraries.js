@@ -10,6 +10,10 @@ module.exports = function (deployer, network, accounts) {
                            , "./DevZenDaoWithUnpackers"
                            , "./DevZenDaoWithUnpackersTestable"
                            , "./HierarchyDaoFactory"
+                           , "./DaicoFactory"
+                           , "./Daico"
+                           , "./DaicoAuto"
+                           , "./DaicoWithUnpackers"
                            ]
 
      return migrateLibs(artifacts, additionalContracts, deployer, network, accounts);
