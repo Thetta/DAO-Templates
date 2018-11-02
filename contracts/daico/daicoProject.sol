@@ -20,7 +20,6 @@ contract DaicoProject {
 	uint public blockUntil = 0;
 	bool public isRemoved = false;
 
-
 	modifier onlyDaico() {
 		require(msg.sender==daicoAddress);
 		_;
