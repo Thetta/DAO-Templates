@@ -41,7 +41,4 @@ contract DevZenDaoWithUnpackersTestable is DevZenDaoTestable {
 		moveToNextEpisode(guestHasCome==1);
 	}
 
-	function burnGuestStakeGeneric(bytes32[] _params) external {
-		burnGuestStake();
-	}
 }

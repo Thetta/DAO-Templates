@@ -45,12 +45,41 @@ contract("DevZenDaoAuto", (accounts) => {
 	let daoBase;
 
 	beforeEach(async () => {
-		devZenDaoFactory = await DevZenDaoFactory.new(boss, [teamMember1, teamMember2], {gas:1e13, gasPrice:0});
+		devZenDaoFactory = await DevZenDaoFactory.new(boss, [teamMember1, teamMember2]);
 		devZenDao = DevZenDao.at(await devZenDaoFactory.devZenDao());
 		daoBase = DaoBase.at(await devZenDaoFactory.daoBase());
 		devZenToken = StdDaoToken.at(await devZenDao.devZenToken());
 		repToken = StdDaoToken.at(await devZenDao.repToken());
 		devZenDaoAuto = DevZenDaoAuto.at(await devZenDaoFactory.devZenDaoAuto());
+	});
+
+	describe("addGroupMemberAuto", () => {
+		it("should add a new group member on successful voting", async() => {
+			await devZenDaoAuto.addGroupMemberAuto("DevZenTeam", guest1, {from: boss}).should.be.fulfilled;
+			const voting = await getVoting(daoBase, 0);
+
+			const membersBefore = await daoBase.getGroupMembers("DevZenTeam");
+			assert.equal(membersBefore.length, 3);
+			
+			await voting.vote(true, {from: teamMember1}).should.be.fulfilled;
+
+			const membersAfter = await daoBase.getGroupMembers("DevZenTeam");
+			assert.equal(membersAfter.length, 4);
+			assert.equal(membersAfter[3], guest1);
+		});
+
+		it("should not add a new group member on failed voting", async() => {
+			await devZenDaoAuto.addGroupMemberAuto("DevZenTeam", guest1, {from: boss}).should.be.fulfilled;
+			const voting = await getVoting(daoBase, 0);
+
+			const membersBefore = await daoBase.getGroupMembers("DevZenTeam");
+			assert.equal(membersBefore.length, 3);
+			
+			await voting.vote(false, {from: teamMember1}).should.be.fulfilled;
+
+			const membersAfter = await daoBase.getGroupMembers("DevZenTeam");
+			assert.equal(membersAfter.length, 3);
+		});
 	});
 
 	describe("withdrawEtherAuto", () => {
@@ -87,24 +116,6 @@ contract("DevZenDaoAuto", (accounts) => {
 			assert.equal(nextEpisode[nextShowHostIndex], boss);
 		});
 
-	});
-
-	describe("burnGuestStakeAuto", () => {
-		it("should burn guest's stake", async() => {
-			await devZenDao.moveToNextEpisode(false,{from:boss}).should.be.fulfilled;
-
-			const balanceBeforeBurn = await devZenToken.balanceOf(devZenDao.address);
-			assert.equal(balanceBeforeBurn.toNumber(), 10e18, "on new episode 10 DZT are minted to contract");
-
-			await devZenDaoAuto.burnGuestStakeAuto({from:teamMember1}).should.be.fulfilled;
-			voting = await getVoting(daoBase,0);	
-			await checkVoting(voting, 1, 0, false, false);
-			await voting.vote(true,{from:teamMember2});
-			await checkVoting(voting, 2, 0, true, true);
-
-			const balanceAfterBurn = await devZenToken.balanceOf(devZenDao.address);
-			assert.equal(balanceAfterBurn.toNumber(), 5e18, "burns 5 DZT at guest's stake");
-		});
 	});
 
 	describe("changeTheGuestAuto", () => {
@@ -262,6 +273,34 @@ contract("DevZenDaoAuto", (accounts) => {
 
 			const dztBalanceAfter = await devZenToken.balanceOf(guest1);
 			assert.equal(dztBalanceAfter.toNumber(), 5e18, "guest's 5 DZT were tansfered back to guest");
+		});
+	});
+
+	describe("removeGroupMemberAuto", () => {
+		it("should remove group member on successful voting", async() => {
+			await devZenDaoAuto.removeGroupMemberAuto("DevZenTeam", teamMember2, {from: boss}).should.be.fulfilled;
+			const voting = await getVoting(daoBase, 0);
+
+			const membersBefore = await daoBase.getGroupMembers("DevZenTeam");
+			assert.equal(membersBefore.length, 3);
+			
+			await voting.vote(true, {from: teamMember1}).should.be.fulfilled;
+
+			const membersAfter = await daoBase.getGroupMembers("DevZenTeam");
+			assert.equal(membersAfter.length, 2);
+		});
+
+		it("should not remove group member on failed voting", async() => {
+			await devZenDaoAuto.removeGroupMemberAuto("DevZenTeam", teamMember2, {from: boss}).should.be.fulfilled;
+			const voting = await getVoting(daoBase, 0);
+
+			const membersBefore = await daoBase.getGroupMembers("DevZenTeam");
+			assert.equal(membersBefore.length, 3);
+			
+			await voting.vote(false, {from: teamMember1}).should.be.fulfilled;
+
+			const membersAfter = await daoBase.getGroupMembers("DevZenTeam");
+			assert.equal(membersAfter.length, 3);
 		});
 	});
 

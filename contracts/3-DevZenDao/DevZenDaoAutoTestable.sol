@@ -2,15 +2,15 @@ pragma solidity ^0.4.24;
 // to enable Params passing to constructor and method
 pragma experimental ABIEncoderV2;
 
-import "@thetta/core/contracts/utils/GenericCaller.sol";
+import "@thetta/core/contracts/DaoBaseAuto.sol";
 
 import "./DevZenDao.sol";
 import "./DevZenDaoCore.sol";
 import "./DevZenDaoWithUnpackersTestable.sol";
 
-contract DevZenDaoAutoTestable is GenericCaller{
+contract DevZenDaoAutoTestable is DaoBaseAuto{
 	DevZenDaoWithUnpackersTestable devZenDao;
-	constructor(IDaoBase _daoBase, DevZenDaoWithUnpackersTestable _devZenDao) public GenericCaller(_daoBase){
+	constructor(IDaoBase _daoBase, DevZenDaoWithUnpackersTestable _devZenDao) public DaoBaseAuto(_daoBase){
 		devZenDao = _devZenDao;
 	}
 
@@ -55,8 +55,4 @@ contract DevZenDaoAutoTestable is GenericCaller{
 		return doAction(devZenDao.DEV_ZEN_MOVE_TO_NEXT_EPISODE(), devZenDao, msg.sender, "moveToNextEpisodeGeneric(bytes32[])", params);
 	}
 
-	function burnGuestStakeAuto() public returns(address proposalOut) {
-		bytes32[] memory params = new bytes32[](0);
-		return doAction(devZenDao.DEV_ZEN_BURN_GUEST_STAKE(), devZenDao, msg.sender, "burnGuestStakeGeneric(bytes32[])", params);
-	}
 }

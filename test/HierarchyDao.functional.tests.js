@@ -28,7 +28,7 @@ contract('HierarchyDaoFactory', (accounts) => {
 	let stdDaoToken;
 
 	before(async () => {
-		hierarchyDaoFactory = await HierarchyDaoFactory.new(boss, [manager1, manager2], [employee1, employee2], [outsiderWithTokens, outsiderWithoutTokens], {gasPrice:0, gas:1e13});
+		hierarchyDaoFactory = await HierarchyDaoFactory.new(boss, [manager1, manager2], [employee1, employee2], [outsiderWithTokens, outsiderWithoutTokens]);
 		daoBase = DaoBaseWithUnpackers.at(await hierarchyDaoFactory.daoBase());
 		store = DaoStorage.at(await hierarchyDaoFactory.store());
 		hierarchyDaoAuto = DaoBaseAuto.at(await hierarchyDaoFactory.hierarchyDaoAuto());

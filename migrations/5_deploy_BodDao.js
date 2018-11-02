@@ -15,10 +15,10 @@ let emp3 = '0x92bc71cd9a9a6ad3a1dcacc2b8c9eab13f4d547e';
 
 module.exports = function(deployer, network, accounts) {
 	return deployer.then(async () => {	
-		let token = await StdDaoToken.new("StdToken", "STD", 18, true, true, 100000000000000000000);
-		let store = await DaoStorage.new([token.address]);
-		let daoBase = await DaoBase.new(store.address);
-		let bodDao = await BodDao.new(daoBase.address);
+		let token = await deployer.deploy(StdDaoToken, "StdToken", "STD", 18, true, true, 100000000000000000000);
+		let store = await deployer.deploy(DaoStorage, [token.address]);
+		let daoBase = await deployer.deploy(DaoBase, store.address);
+		let bodDao = await deployer.deploy(BodDao, daoBase.address);
 
 		await store.allowActionByAddress(await daoBase.MANAGE_GROUPS(), accounts[0]);
 
@@ -40,7 +40,7 @@ module.exports = function(deployer, network, accounts) {
 		await daoBase.addGroupMember("Employees", emp2);
 		await daoBase.addGroupMember("Employees", emp3);
 	
-		let bodDaoAuto = await DaoBaseAuto.new(daoBase.address);
+		let bodDaoAuto = await deployer.deploy(DaoBaseAuto, daoBase.address);
 
 		let VOTING_TYPE_1P1V = 1;
 		await bodDaoAuto.setVotingParams(await daoBase.MANAGE_GROUPS(), VOTING_TYPE_1P1V, uintToBytes32(0), fromUtf8("BoD"), uintToBytes32(49), uintToBytes32(49), 0);
