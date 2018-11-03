@@ -27,5 +27,4 @@ contract Daico is DaoClient {
 	}
 
 	function addAmountToFund() public payable {}
-
 }
