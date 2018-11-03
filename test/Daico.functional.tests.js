@@ -31,5 +31,6 @@ contract("Daico", (accounts) => {
 
 	it("BoD member should be able to add new proposal", async () => {
 		// await daico.addNewProject(5, 1000, { from: projectOwner1 }).should.be.fulfilled;
+		
 	});
 });
