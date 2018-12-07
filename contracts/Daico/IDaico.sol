@@ -7,38 +7,35 @@ import "zeppelin-solidity/contracts/token/ERC20/ERC20.sol";
  * @title IDaico
  * How it works:
  * 1. Evercity member deploys current contract for some project.
- * 2. Evercity member allows to deplyed contract to transfer some amount of DAI tokens.
+ * 2. Contract creates initial votings of type ReleaseTap for each tap.
+ * 3. Evercity member transfers DAI tokens to DAICO contract address.
  *
  * Scenarios:
  * # Successful voting for tap release
- * 1. Evercity member creates a new voting of type 'ReleaseTap' via 'createVotingByOwner()'.
- * 2. Token holders votes via 'vote()'.
- * 3. Quorum reached with positive decision.
- * 4. Project owner withdraws DAI tokens for accepted tap via 'withdrawTapPayment()'.
- *
+ * 1. Token holders votes via 'vote()'.
+ * 2. Quorum reached with positive decision.
+ * 3. Project owner withdraws DAI tokens for accepted tap via 'withdrawTapPayment()'.
+
  * # Quorum not reached for 'ReleaseTap' voting
- * 1. Evercity member creates a new voting of type 'ReleaseTap' via 'createVotingByOwner()'.
- * 2. Token holders votes via 'vote()'.
- * 3. Quorum NOT reached.
- * 4. Evercity member creates a new voting of type 'ReleaseTapDecreasedQuorum' via 'createVotingByOwner()'.
- * 5. Quorum reached with positive decision.
- * 6. Project owner withdraws DAI tokens for accepted tap via 'withdrawTapPayment()'.
+ * 1. Token holders votes via 'vote()'.
+ * 2. Quorum NOT reached.
+ * 3. Evercity member creates a new voting of type 'ReleaseTapDecreasedQuorum' via 'createVotingByOwner()'.
+ * 4. Quorum reached with positive decision.
+ * 5. Project owner withdraws DAI tokens for accepted tap via 'withdrawTapPayment()'.
  *
  * # Quorum reached but minVoteRate with positive decisions is not reached
- * 1. Evercity member creates a new voting of type 'ReleaseTap' via 'createVotingByOwner()'.
- * 2. Token holders votes via 'vote()'.
- * 3. Quorum reached but minVoteRate with positive decisions is not reached
- * 4. One of the investors creates a new voting of type 'ChangeRoadmap' via 'createVotingByInvestor()'.
- * 5. Quorum reached with positive decision.
- * 6. Project owner withdraws DAI tokens for accepted tap via 'withdrawTapPayment()'.
+ * 1. Token holders votes via 'vote()'.
+ * 2. Quorum reached but minVoteRate with positive decisions is not reached
+ * 3. One of the investors creates a new voting of type 'ChangeRoadmap' via 'createVotingByInvestor()'.
+ * 4. Quorum reached with positive decision.
+ * 5. Project owner withdraws DAI tokens for accepted tap via 'withdrawTapPayment()'.
  *
  * # Voting strongly against tap release
- * 1. Evercity member creates a new voting of type 'ReleaseTap' via 'createVotingByOwner()'.
- * 2. Token holders votes via 'vote()'.
- * 3. Quorum reached and more than minVoteRate token holders voted against tap release.
- * 4. One of the investors creates a new voting of type 'TerminateProject' via 'createVotingByInvestor()'.
- * 5. Quorum reached with positive decision. Contract property 'isTerminated' is set to true.
- * 6. Evercity member withdraws left DAI tokens via 'withdrawFunding()'.
+ * 1. Token holders votes via 'vote()'.
+ * 2. Quorum reached and more than minVoteRate token holders voted against tap release.
+ * 3. One of the investors creates a new voting of type 'TerminateProject' via 'createVotingByInvestor()'.
+ * 4. Quorum reached with positive decision.
+ * 5. Evercity member withdraws left DAI tokens via 'withdrawFunding()'.
  */
 contract IDaico is Ownable {
 
@@ -46,8 +43,6 @@ contract IDaico is Ownable {
 	ERC20 public projectToken;
 
 	address public projectOwner;
-
-	bool public isTerminated;
 
 	uint public minQuorumRate;
 	uint public minVoteRate;
@@ -57,7 +52,10 @@ contract IDaico is Ownable {
 	uint[] public tapTimestampsFinishAt;
 
 	enum VotingType { ReleaseTap, ReleaseTapDecreasedQuorum, ChangeRoadmap, TerminateProject }
-	enum VotingResult { Ok, QuorumNotReached }
+	enum VotingResult { Accept, Decline, QuorumNotReached, NoDecision }
+
+	mapping(uint => mapping(uint => uint)) public tapVotings;
+	mapping(uint => uint) public tapVotingsCount;
 
 	mapping(uint => Voting) public votings;
 	uint public votingsCount;
@@ -79,6 +77,7 @@ contract IDaico is Ownable {
 		uint createdAt;
 		uint finishAt;
 		VotingType votingType;
+		mapping(address => bool) voted;
 	}
 
 	/**
@@ -110,11 +109,31 @@ contract IDaico is Ownable {
 	 */
 
 	/**
-	 * @dev Returns voting result for voting
+	 * @dev Returns voting result for voting.
+	 * There are 4 voting results:
+	 * - Accept: proposal accepted, majority of investors said 'yes'
+	 * - Decline: proposal declined, majority of investors said 'no'
+	 * - QuorumNotReached: not enough investors voted
+	 * - NoDecision: no consensus among investors, ex: 50% of 'yes' vs 50% of 'no' votes
 	 * @param _votingIndex voting index
 	 * @return voting result
 	 */
-	function getVotingResult(uint _votingIndex) public returns(VotingResult);
+	function getVotingResult(uint _votingIndex) public view returns(VotingResult);
+
+	/**
+	 * @dev Checks whether project is terminated. 
+	 * Project is terminated when the last voting is of type TerminateProject with Accept result.
+	 * When project is terminated contract owner(evercity member) can withdraw DAI tokens via 'withdrawFunding()'.
+	 * @return is project terminated
+	 */
+	function isProjectTerminated() public view returns(bool);
+
+	/**
+	 * @dev Checks whether tap withdraw is accepted by investors for project owner
+	 * @param _tapIndex tap index
+	 * @return whether withdraw is accepted
+	 */
+	function isTapWithdrawAcceptedByInvestors(uint _tapIndex) public view returns(bool);
 
 	/**
 	 * Investor methods
@@ -133,17 +152,18 @@ contract IDaico is Ownable {
 	 * - Is token holder(has at least 1 project token)
 	 * - Valid voting index
 	 * - Is valid voting period
+	 * - Investor hasn't voted earlier for this proposal
 	 * @param _votingIndex voting index
-	 * @param _decision decision, yes or no
+	 * @param _isYes decision, yes or no
 	 */
-	function vote(uint _votingIndex, bool _decision) external;
+	function vote(uint _votingIndex, bool _isYes) external;
 
 	/**
 	 * Owner / evercity member methods
 	 */
 
 	/**
-	 * @dev Creates a new voting by owner. Owner can create 2 types of votings: tap release and tap release with decreased quorum rate
+	 * @dev Creates a new voting by owner. Owner can create 1 type of votings: tap release with decreased quorum rate
 	 * @param _tapIndex tap index
 	 * @param _votingType voting type
 	 */
@@ -165,6 +185,7 @@ contract IDaico is Ownable {
 	 * Preconditions:
 	 * - Valid tap index
 	 * - Tap is not yet withdrawn
+	 * - Tap withdrawal is accepted by investors
 	 * @param _tapIndex tap index
 	 * Result: DAI tokens for current tap are transfered to project owner address
 	 */
@@ -177,9 +198,11 @@ contract IDaico is Ownable {
 	/**
 	 * @dev Creates a new voting for tap
 	 * @param _tapIndex tap index
-	 * @param _votingType voting type
 	 * @param _quorumRate quorum rate
+	 * @param _createdAt when voting was created timestamp
+	 * @param _finishAt when voting should be finished timestamp
+	 * @param _votingType voting type
 	 */
-	function _createVoting(uint _tapIndex, VotingType _votingType, uint _quorumRate) internal;
+	function _createVoting(uint _tapIndex, uint _quorumRate, uint _createdAt, uint _finishAt, VotingType _votingType) internal;
 
 }

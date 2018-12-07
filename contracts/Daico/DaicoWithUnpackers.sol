@@ -1,11 +1,11 @@
 pragma solidity ^0.4.24;
 
-import "./Daico.sol";
+import "./DaicoOld.sol";
 
 
-contract DaicoWithUnpackers is Daico {
+contract DaicoWithUnpackers is DaicoOld {
 
-	constructor(IDaoBase _daoBase, address[] _investors) Daico(_daoBase, _investors) {
+	constructor(IDaoBase _daoBase, address[] _investors) DaicoOld(_daoBase, _investors) {
 
 	}	
 	
