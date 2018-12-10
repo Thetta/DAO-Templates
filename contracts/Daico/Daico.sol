@@ -23,7 +23,7 @@ contract Daico is Ownable {
 	uint[] public tapAmounts;
 	uint[] public tapTimestampsFinishAt;
 
-	enum VotingType { ReleaseTap, ReleaseTapDecreasedQuorum, ChangeRoadmap, TerminateProject }
+	enum VotingType { ReleaseTap, ReleaseTapDecreasedQuorum, ChangeRoadmap, ChangeRoadmapDecreasedQuorum, TerminateProject, TerminateProjectDecreasedQuorum }
 	enum VotingResult { Accept, Decline, QuorumNotReached, NoDecision }
 
 	mapping(uint => mapping(uint => uint)) public tapVotings;
@@ -158,14 +158,25 @@ contract Daico is Ownable {
 	}
 
 	/**
+	 * @dev Checks whether investor already voted in particular voting
+	 * @param _votingIndex voting index
+	 * @param _investorAddress investor address
+	 * @return whether investor has already voted in particular voting
+	 */
+	function isInvestorVoted(uint _votingIndex, address _investorAddress) external view validVotingIndex(_votingIndex) returns(bool) {
+		require(_investorAddress != address(0));
+		return votings[_votingIndex].voted[_investorAddress];
+	}
+
+	/**
 	 * @dev Checks whether project is terminated
 	 * @return is project terminated
 	 */
 	function isProjectTerminated() public view returns(bool) {
 		bool isTerminated = false;
 		Voting memory latestVoting = votings[votingsCount.sub(1)];
-		// if latest voting is of type TerminateProject and result Accept then set isTerminated to true
-		if((latestVoting.votingType == VotingType.TerminateProject) && (getVotingResult(votingsCount.sub(1)) == VotingResult.Accept)) {
+		// if latest voting is of type TerminateProject or TerminateProjectDecreasedQuorum and result Accept then set isTerminated to true
+		if(((latestVoting.votingType == VotingType.TerminateProject) || (latestVoting.votingType == VotingType.TerminateProjectDecreasedQuorum)) && (getVotingResult(votingsCount.sub(1)) == VotingResult.Accept)) {
 			isTerminated = true;
 		}
 		return isTerminated;
@@ -182,16 +193,8 @@ contract Daico is Ownable {
 		uint latestVotingIndex = tapVotings[_tapIndex][tapVotingsCount[_tapIndex].sub(1)];
 		Voting memory voting = votings[latestVotingIndex];
 		bool isVotingAccepted = getVotingResult(latestVotingIndex) == VotingResult.Accept;
-		// if voting of type ReleaseTap and result is Accept then set isWithdrawAccepted to true
-		if((voting.votingType == VotingType.ReleaseTap) && isVotingAccepted) {
-			isWithdrawAccepted = true;
-		}
-		// if voting of type ReleaseTapDecreasedQuorum and result is Accept then set isWithdrawAccepted to true
-		if((voting.votingType == VotingType.ReleaseTapDecreasedQuorum) && isVotingAccepted) {
-			isWithdrawAccepted = true;
-		}
-		// if voting of type ChangeRoadmap and result is Accept then set isWithdrawAccepted to true
-		if((voting.votingType == VotingType.ChangeRoadmap) && isVotingAccepted) {
+		// if voting is of types: ReleaseTap, ReleaseTapDecreasedQuorum, ChangeRoadmap or ChangeRoadmapDecreasedQuorum then set isWithdrawAccepted to true
+		if(((voting.votingType != VotingType.TerminateProject) && (voting.votingType != VotingType.TerminateProjectDecreasedQuorum)) && isVotingAccepted) {
 			isWithdrawAccepted = true;
 		}
 		return isWithdrawAccepted;
@@ -202,33 +205,65 @@ contract Daico is Ownable {
 	 */
 
 	/**
-	 * @dev Creates a new voting by investor. Investors can create votings of 2 types: ChangeRoadmap and TerminateProject.
+	 * @dev Creates a new voting by investor. Investors can create votings of 4 types: ChangeRoadmap, ChangeRoadmapDecreasedQuorum, TerminateProject, TerminateProjectDecreasedQuorum.
 	 * @param _tapIndex tap index
 	 * @param _votingType voting type
 	 */
 	function createVotingByInvestor(uint _tapIndex, VotingType _votingType) external onlyInvestor validTapIndex(_tapIndex) {
 		// common validation
-		require(_votingType == VotingType.ChangeRoadmap || _votingType == VotingType.TerminateProject);
+		require(_votingType == VotingType.ChangeRoadmap || _votingType == VotingType.ChangeRoadmapDecreasedQuorum || _votingType == VotingType.TerminateProject || _votingType == VotingType.TerminateProjectDecreasedQuorum);
 		uint latestVotingIndex = tapVotings[_tapIndex][tapVotingsCount[_tapIndex].sub(1)];
 		Voting memory latestVoting = votings[latestVotingIndex];
+		VotingResult votingResult = getVotingResult(latestVotingIndex);
+		// check that last voting is finished
 		require(now >= latestVoting.finishAt);
 
 		// if investor wants to create voting of type ChangeRoadmap
 		if(_votingType == VotingType.ChangeRoadmap) {
-			// check that latest voting is of type ReleaseTap or ReleaseTapDecreasedQuorum
-			require(latestVoting.votingType == VotingType.ReleaseTap || latestVoting.votingType == VotingType.ReleaseTapDecreasedQuorum);
-			// check that latest voting result is no decision
-			require(getVotingResult(latestVotingIndex) == VotingResult.NoDecision);
+			// check that latest voting is of types ReleaseTap, ReleaseTapDecreasedQuorum, TerminateProject, TerminateProjectDecreasedQuorum
+			require(latestVoting.votingType == VotingType.ReleaseTap || latestVoting.votingType == VotingType.ReleaseTapDecreasedQuorum || latestVoting.votingType == VotingType.TerminateProject || latestVoting.votingType == VotingType.TerminateProjectDecreasedQuorum);
+			// if latest voting is ReleaseTap
+			if(latestVoting.votingType == VotingType.ReleaseTap || latestVoting.votingType == VotingType.ReleaseTapDecreasedQuorum) {
+				// check that latest voting result is no decision
+				require(votingResult == VotingResult.NoDecision);
+			}
+			// if latest voting is TerminateProject
+			if(latestVoting.votingType == VotingType.TerminateProject || latestVoting.votingType == VotingType.TerminateProjectDecreasedQuorum) {
+				// check that latest voting result is decline
+				require(votingResult == VotingResult.Decline);
+			}
 			// create a new voting
 			_createVoting(_tapIndex, minQuorumRate, now + 3 weeks, now + 4 weeks, VotingType.ChangeRoadmap);
 		}
 
+		// if investor wants to create voting of type ChangeRoadmapDecreasedQuorum
+		if(_votingType == VotingType.ChangeRoadmapDecreasedQuorum) {
+			// check that latest voting is of type ChangeRoadmap or ChangeRoadmapDecreasedQuorum
+			require(latestVoting.votingType == VotingType.ChangeRoadmap || latestVoting.votingType == VotingType.ChangeRoadmapDecreasedQuorum);
+			// check that latest voting result has not reached quorum or has no decision
+			require((votingResult == VotingResult.QuorumNotReached) || (votingResult == VotingResult.NoDecision));
+			// create a new voting
+			_createVoting(_tapIndex, 50, now + 3 weeks, now + 4 weeks, VotingType.ChangeRoadmapDecreasedQuorum);
+		}
+
 		// if investor wants to create voting of type TerminateProject
 		if(_votingType == VotingType.TerminateProject) {
+			// check that latest voting is of types: ReleaseTap, ReleaseTapDecreasedQuorum, ChangeRoadmap, ChangeRoadmapDecreasedQuorum
+			require(latestVoting.votingType == VotingType.ReleaseTap || latestVoting.votingType == VotingType.ReleaseTapDecreasedQuorum || latestVoting.votingType == VotingType.ChangeRoadmap || latestVoting.votingType == VotingType.ChangeRoadmapDecreasedQuorum);
 			// check that latest voting result is decline
-			require(getVotingResult(latestVotingIndex) == VotingResult.Decline);
+			require(votingResult == VotingResult.Decline);
 			// create a new voting
 			_createVoting(_tapIndex, minQuorumRate, now, now + 2 weeks, VotingType.TerminateProject);
+		}
+
+		// if investor wants to create voting of type TerminateProjectDecreasedQuorum
+		if(_votingType == VotingType.TerminateProjectDecreasedQuorum) {
+			// check that latest voting is of type TerminateProject or TerminateProjectDecreasedQuorum
+			require(latestVoting.votingType == VotingType.TerminateProject || latestVoting.votingType == VotingType.TerminateProjectDecreasedQuorum);
+			// check that latest voting result has not reached quorum or has no decision
+			require((votingResult == VotingResult.QuorumNotReached) || (votingResult == VotingResult.NoDecision));
+			// create a new voting
+			_createVoting(_tapIndex, 50, now, now + 2 weeks, VotingType.TerminateProjectDecreasedQuorum);
 		}
 	}
 	
@@ -242,6 +277,7 @@ contract Daico is Ownable {
 		require(now >= votings[_votingIndex].createdAt);
 		require(now < votings[_votingIndex].finishAt);
 		require(!votings[_votingIndex].voted[msg.sender]);
+		require(!isProjectTerminated());
 		// vote
 		votings[_votingIndex].voted[msg.sender] = true;
 		if(_isYes) {
@@ -267,8 +303,8 @@ contract Daico is Ownable {
 		Voting memory latestVoting = votings[latestVotingIndex];
 		// check that latest voting is finished
 		require(now >= latestVoting.finishAt);
-		// check that latest voting is of type ReleaseTap or ReleaseTapDecreasedQuorum or TerminateProject
-		require(latestVoting.votingType == VotingType.ReleaseTap || latestVoting.votingType == VotingType.ReleaseTapDecreasedQuorum || latestVoting.votingType == VotingType.TerminateProject);
+		// check that latest voting is of type ReleaseTap or ReleaseTapDecreasedQuorum
+		require(latestVoting.votingType == VotingType.ReleaseTap || latestVoting.votingType == VotingType.ReleaseTapDecreasedQuorum);
 		// check that latest voting result is quorum not reached
 		require(getVotingResult(latestVotingIndex) == VotingResult.QuorumNotReached);
 		// create a new voting
