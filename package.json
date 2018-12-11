@@ -29,6 +29,7 @@
 		"dotenv": "^6.0.0",
 		"ganache-cli": "^6.1.4",
 		"growl": "^1.10.0",
+		"moment": "^2.22.2",
 		"solidity-coverage": "^0.5.5",
 		"truffle": "^4.1.8",
 		"truffle-hdwallet-provider": "0.0.5",
