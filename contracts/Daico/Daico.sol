@@ -339,8 +339,8 @@ contract Daico is Ownable {
 	function withdrawTapPayment(uint _tapIndex) external validTapIndex(_tapIndex) {
 		// validation
 		require(msg.sender == projectOwner);
-		require(!tapPayments[_tapIndex].isWithdrawn);
 		require(isTapWithdrawAcceptedByInvestors(_tapIndex));
+		require(!tapPayments[_tapIndex].isWithdrawn);
 		// create tap payment
 		TapPayment memory tapPayment;
 		tapPayment.amount = tapAmounts[_tapIndex];

@@ -12,6 +12,7 @@ contract("Daico", (accounts) => {
 	const inverstorAddress2 = accounts[3];
 	const inverstorAddress3 = accounts[4];
 	const inverstorAddress4 = accounts[5];
+	const inverstorAddress5 = accounts[6];
 
 	const VOTING_TYPE_RELEASE_TAP = 0;
 	const VOTING_TYPE_RELEASE_TAP_DECREASED_QUORUM = 1;
@@ -25,7 +26,6 @@ contract("Daico", (accounts) => {
 	const VOTING_RESULT_QUORUM_NOT_REACHED = 2;
 	const VOTING_RESULT_NO_DECISION = 3;
 
-	const timestampsFinishAt = [moment().add(1, 'week').unix(), moment().add(1, '5 weeks').unix()];
 	const minQuorumRate = 70;
 	const minVoteRate = 70;
 	const tokenHoldersCount = 5;
@@ -33,15 +33,24 @@ contract("Daico", (accounts) => {
 	let daico;
 	let daiToken;
 	let projectToken;
+	let timestampsFinishAt;
 
 	beforeEach(async() => {
 		daiToken = await MintableToken.new();
+		await daiToken.mint(evercityMemberAddress, 3);
+
 		projectToken = await MintableToken.new();
 		await projectToken.mint(inverstorAddress, 1);
 		await projectToken.mint(inverstorAddress2, 1);
 		await projectToken.mint(inverstorAddress3, 1);
 		await projectToken.mint(inverstorAddress4, 1);
+		
+		timestampsFinishAt = [
+			moment.unix(web3.eth.getBlock("latest").timestamp).add(1, 'week').unix(),
+			moment.unix(web3.eth.getBlock("latest").timestamp).add(5, 'weeks').unix()
+		];
 		daico = await Daico.new(daiToken.address, projectToken.address, projectOwnerAddress, 2, [1, 2], timestampsFinishAt, minVoteRate, minQuorumRate, tokenHoldersCount);
+		await daiToken.transfer(daico.address, 3, {from: evercityMemberAddress});
 	});
 
 	describe("constructor()", () => {
@@ -151,6 +160,151 @@ contract("Daico", (accounts) => {
 		it("should revert if last voting is not finished", async() => {
 			await daico.createVotingByInvestor(0, VOTING_TYPE_CHANGE_ROADMAP, {from: inverstorAddress}).should.be.rejectedWith("revert");
 		});
+
+		it("should revert on ChangeRoadmap voting type when last voting is not: ReleaseTap, ReleaseTapDecreasedQuorum, TerminateProject, TerminateProjectDecreasedQuorum", async() => {
+			await daico.vote(0, true, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress4}).should.be.fulfilled;
+			await increaseTime(7 * 24 * 60 * 60);
+			await daico.createVotingByInvestor(0, VOTING_TYPE_CHANGE_ROADMAP, {from: inverstorAddress}).should.be.fulfilled;
+			await increaseTime(28 * 24 * 60 * 60);
+			await daico.createVotingByInvestor(0, VOTING_TYPE_CHANGE_ROADMAP, {from: inverstorAddress}).should.be.rejectedWith("revert");
+		});
+
+		it("should revert on ChangeRoadmap voting type when last voting is ReleaseTap or ReleaseTapDecreasedQuorum with voting result not NoDecision", async() => {
+			await daico.vote(0, true, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress4}).should.be.fulfilled;
+			await increaseTime(7 * 24 * 60 * 60);
+			await daico.createVotingByInvestor(0, VOTING_TYPE_CHANGE_ROADMAP, {from: inverstorAddress}).should.be.rejectedWith("revert");
+		});
+
+		it("should revert on ChangeRoadmap voting type when last voting is TerminateProject or TerminateProjectDecreasedQuorum with voting result not Decline", async() => {
+			await daico.vote(0, false, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress4}).should.be.fulfilled;
+			await increaseTime(7 * 24 * 60 * 60);
+			await daico.createVotingByInvestor(0, VOTING_TYPE_TERMINATE_PROJECT, {from: inverstorAddress}).should.be.fulfilled;
+			await increaseTime(28 * 24 * 60 * 60);
+			await daico.createVotingByInvestor(0, VOTING_TYPE_CHANGE_ROADMAP, {from: inverstorAddress}).should.be.rejectedWith("revert");
+		});
+
+		it("should create a new voting of type ChangeRoadmap", async() => {
+			await daico.vote(0, true, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress4}).should.be.fulfilled;
+			await increaseTime(7 * 24 * 60 * 60);
+			await daico.createVotingByInvestor(0, VOTING_TYPE_CHANGE_ROADMAP, {from: inverstorAddress}).should.be.fulfilled;
+		});
+
+		it("should revert on ChangeRoadmapDecreasedQuorum voting type when last voting is not ChangeRoadmap or ChangeRoadmapDecreasedQuorum", async() => {
+			await daico.vote(0, true, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress4}).should.be.fulfilled;
+			await increaseTime(7 * 24 * 60 * 60);
+			await daico.createVotingByInvestor(0, VOTING_TYPE_CHANGE_ROADMAP_DECREASED_QUORUM, {from: inverstorAddress}).should.be.rejectedWith("revert");
+		});
+
+		it("should revert on ChangeRoadmapDecreasedQuorum voting type when last voting result is not QuorumNotReached or NoDecision", async() => {
+			await daico.vote(0, true, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress4}).should.be.fulfilled;
+			await increaseTime(7 * 24 * 60 * 60);
+			await daico.createVotingByInvestor(0, VOTING_TYPE_CHANGE_ROADMAP, {from: inverstorAddress}).should.be.fulfilled;
+			await increaseTime(21 * 24 * 60 * 60);
+			await daico.vote(2, true, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(2, true, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(2, true, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(2, true, {from: inverstorAddress4}).should.be.fulfilled;
+			await increaseTime(28 * 24 * 60 * 60);
+			await daico.createVotingByInvestor(0, VOTING_TYPE_CHANGE_ROADMAP_DECREASED_QUORUM, {from: inverstorAddress}).should.be.rejectedWith("revert");
+		});
+
+		it("should create a new voting of type ChangeRoadmapDecreasedQuorum", async() => {
+			await daico.vote(0, true, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress4}).should.be.fulfilled;
+			await increaseTime(7 * 24 * 60 * 60);
+			await daico.createVotingByInvestor(0, VOTING_TYPE_CHANGE_ROADMAP, {from: inverstorAddress}).should.be.fulfilled;
+			await increaseTime(21 * 24 * 60 * 60);
+			await daico.vote(2, true, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(2, true, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(2, false, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(2, false, {from: inverstorAddress4}).should.be.fulfilled;
+			await increaseTime(28 * 24 * 60 * 60);
+			await daico.createVotingByInvestor(0, VOTING_TYPE_CHANGE_ROADMAP_DECREASED_QUORUM, {from: inverstorAddress}).should.be.fulfilled;
+		});
+
+		it("should revert on TerminateProject voting type when last voting is not: ReleaseTap, ReleaseTapDecreasedQuorum, ChangeRoadmap, ChangeRoadmapDecreasedQuorum", async() => {
+			await daico.vote(0, false, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress4}).should.be.fulfilled;
+			await increaseTime(7 * 24 * 60 * 60);
+			await daico.createVotingByInvestor(0, VOTING_TYPE_TERMINATE_PROJECT, {from: inverstorAddress}).should.be.fulfilled;
+			await increaseTime(14 * 24 * 60 * 60);
+			await daico.createVotingByInvestor(0, VOTING_TYPE_TERMINATE_PROJECT, {from: inverstorAddress}).should.be.rejectedWith("revert");
+		});
+
+		it("should revert on TerminateProject voting type when last voting result is not Decline", async() => {
+			await daico.vote(0, true, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress4}).should.be.fulfilled;
+			await increaseTime(7 * 24 * 60 * 60);
+			await daico.createVotingByInvestor(0, VOTING_TYPE_TERMINATE_PROJECT, {from: inverstorAddress}).should.be.rejectedWith("revert");
+		});
+
+		it("should create a new voting of type TerminateProject", async() => {
+			await daico.vote(0, false, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress4}).should.be.fulfilled;
+			await increaseTime(7 * 24 * 60 * 60);
+			await daico.createVotingByInvestor(0, VOTING_TYPE_TERMINATE_PROJECT, {from: inverstorAddress}).should.be.fulfilled;
+		});
+
+		it("should revert on TerminateProjectDecreasedQuorum voting type when last voting is not TerminateProject or TerminateProjectDecreasedQuorum", async() => {
+			await increaseTime(7 * 24 * 60 * 60);
+			await daico.createVotingByInvestor(0, VOTING_TYPE_TERMINATE_PROJECT_DECREASED_QUORUM, {from: inverstorAddress}).should.be.rejectedWith("revert");
+		});
+
+		it("should revert on TerminateProjectDecreasedQuorum voting type when last voting result is not QuorumReached or NoDecision", async() => {
+			await daico.vote(0, false, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress4}).should.be.fulfilled;
+			await increaseTime(7 * 24 * 60 * 60);
+			await daico.createVotingByInvestor(0, VOTING_TYPE_TERMINATE_PROJECT, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(2, false, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(2, false, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(2, false, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(2, false, {from: inverstorAddress4}).should.be.fulfilled;
+			await increaseTime(14 * 24 * 60 * 60);
+			await daico.createVotingByInvestor(0, VOTING_TYPE_TERMINATE_PROJECT_DECREASED_QUORUM, {from: inverstorAddress}).should.be.rejectedWith("revert");
+		});
+
+		it("should create a new voting of type TerminateProjectDecreasedQuorum", async() => {
+			await daico.vote(0, false, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress4}).should.be.fulfilled;
+			await increaseTime(7 * 24 * 60 * 60);
+			await daico.createVotingByInvestor(0, VOTING_TYPE_TERMINATE_PROJECT, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(2, true, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(2, true, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(2, false, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(2, false, {from: inverstorAddress4}).should.be.fulfilled;
+			await increaseTime(14 * 24 * 60 * 60);
+			await daico.createVotingByInvestor(0, VOTING_TYPE_TERMINATE_PROJECT_DECREASED_QUORUM, {from: inverstorAddress}).should.be.fulfilled;
+		});
 	});
 
 	describe("createVotingByOwner()", () => {
@@ -162,26 +316,33 @@ contract("Daico", (accounts) => {
 			await daico.createVotingByOwner(0, VOTING_TYPE_RELEASE_TAP_DECREASED_QUORUM, {from: evercityMemberAddress}).should.be.rejectedWith("revert");
 		});
 
-		// TODO: test 'require(latestVoting.votingType == VotingType.ReleaseTap || latestVoting.votingType == VotingType.ReleaseTapDecreasedQuorum);'
+		it("should revert if latest voting is not ReleaseTap or ReleaseTapDecreasedQuorum", async() => {
+			await daico.vote(0, false, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress4}).should.be.fulfilled;
+			await increaseTime(7 * 24 * 60 * 60);
+			await daico.createVotingByInvestor(0, VOTING_TYPE_TERMINATE_PROJECT, {from: inverstorAddress}).should.be.fulfilled;
+			await increaseTime(14 * 24 * 60 * 60);
+			await daico.createVotingByOwner(0, VOTING_TYPE_RELEASE_TAP_DECREASED_QUORUM, {from: evercityMemberAddress}).should.be.rejectedWith("revert");
+		});
 
-		// TODO: fix increaseTime issue
-		// it("should revert if latest voting result is not quorum not reached", async() => {
-		// 	await daico.vote(0, true, {from: inverstorAddress}).should.be.fulfilled;
-		// 	await daico.vote(0, true, {from: inverstorAddress2}).should.be.fulfilled;
-		// 	await daico.vote(0, true, {from: inverstorAddress3}).should.be.fulfilled;
-		// 	await daico.vote(0, true, {from: inverstorAddress4}).should.be.fulfilled;
-		// 	await increaseTime(7 * 24 * 60 * 60);
-		// 	await daico.createVotingByOwner(0, VOTING_TYPE_RELEASE_TAP_DECREASED_QUORUM, {from: evercityMemberAddress}).should.be.rejectedWith("revert");
-		// });
+		it("should revert if latest voting result is not quorum not reached", async() => {
+			await daico.vote(0, true, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress4}).should.be.fulfilled;
+			await increaseTime(7 * 24 * 60 * 60);
+			await daico.createVotingByOwner(0, VOTING_TYPE_RELEASE_TAP_DECREASED_QUORUM, {from: evercityMemberAddress}).should.be.rejectedWith("revert");
+		});
 
-		// TODO: fix increaseTime issue
-		// it("should create a new voting", async() => {
-		// 	await daico.vote(0, true, {from: inverstorAddress}).should.be.fulfilled;
-		// 	await daico.vote(0, true, {from: inverstorAddress2}).should.be.fulfilled;
-		// 	await daico.vote(0, true, {from: inverstorAddress3}).should.be.fulfilled;
-		// 	await increaseTime(7 * 24 * 60 * 60);
-		// 	await daico.createVotingByOwner(0, VOTING_TYPE_RELEASE_TAP_DECREASED_QUORUM, {from: evercityMemberAddress}).should.be.fulfilled;
-		// });
+		it("should create a new voting", async() => {
+			await daico.vote(0, true, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress3}).should.be.fulfilled;
+			await increaseTime(7 * 24 * 60 * 60);
+			await daico.createVotingByOwner(0, VOTING_TYPE_RELEASE_TAP_DECREASED_QUORUM, {from: evercityMemberAddress}).should.be.fulfilled;
+		});
 	});
 
 	describe("getVotingResult()", () => {
@@ -232,6 +393,26 @@ contract("Daico", (accounts) => {
 		});
 	});
 
+	describe("isProjectTerminated()", () => {
+		it("should return false if project is not terminated", async() => {
+			assert.equal(await daico.isProjectTerminated(), false);
+		});
+
+		it("should return true if project is terminated", async() => {
+			await daico.vote(0, false, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress4}).should.be.fulfilled;
+			await increaseTime(7 * 24 * 60 * 60);
+			await daico.createVotingByInvestor(0, VOTING_TYPE_TERMINATE_PROJECT, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(2, true, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(2, true, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(2, true, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(2, true, {from: inverstorAddress4}).should.be.fulfilled;
+			assert.equal(await daico.isProjectTerminated(), true);
+		});
+	});
+
 	describe("isTapWithdrawAcceptedByInvestors()", () => {
 		it("should return false if investors have not accepted tap release", async() => {
 			assert.equal(await daico.isTapWithdrawAcceptedByInvestors(0), false);
@@ -251,14 +432,27 @@ contract("Daico", (accounts) => {
 			await daico.vote(1, true, {from: inverstorAddress}).should.be.rejectedWith("revert");
 		});
 
-		// TODO: fix increase time issue when timestampsFinishAt not in sync with current blockhain timestamp after 'increaseTime()'
-		// it("should revert if it is too late to vote", async() => {
-		// 	const daicoNew = await Daico.new(daiToken.address, projectToken.address, projectOwnerAddress, 2, [1, 2], timestampsFinishAt, minVoteRate, minQuorumRate, tokenHoldersCount);
-		// 	await increaseTime(7 * 24 * 60 * 60);
-		// 	await daicoNew.vote(0, true, {from: inverstorAddress}).should.be.rejectedWith("revert");
-		// });
+		it("should revert if it is too late to vote", async() => {
+			const daicoNew = await Daico.new(daiToken.address, projectToken.address, projectOwnerAddress, 2, [1, 2], timestampsFinishAt, minVoteRate, minQuorumRate, tokenHoldersCount);
+			await increaseTime(7 * 24 * 60 * 60);
+			await daicoNew.vote(0, true, {from: inverstorAddress}).should.be.rejectedWith("revert");
+		});
 
-		// TODO: test 'require(!isProjectTerminated())'
+		it("should revert if project is terminated", async() => {
+			// terminate project
+			await daico.vote(0, false, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress4}).should.be.fulfilled;
+			await increaseTime(7 * 24 * 60 * 60);
+			await daico.createVotingByInvestor(0, VOTING_TYPE_TERMINATE_PROJECT, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(2, true, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(2, true, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(2, true, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(2, true, {from: inverstorAddress4}).should.be.fulfilled;
+
+			await daico.vote(2, false, {from: inverstorAddress5}).should.be.rejectedWith("revert");
+		});
 
 		it("should revert if investor has already voted", async() => {
 			await daico.vote(0, true, {from: inverstorAddress}).should.be.fulfilled;
@@ -281,6 +475,73 @@ contract("Daico", (accounts) => {
 			assert.equal((await daico.votings(0))[2], 0);
 			await daico.vote(0, false, {from: inverstorAddress}).should.be.fulfilled;
 			assert.equal((await daico.votings(0))[2], 1);
+		});
+	});
+
+	describe("withdrawFunding()", () => {
+		it("should revert if project is not terminated", async() => {
+			await daico.withdrawFunding({from: evercityMemberAddress}).should.be.rejectedWith("revert");
+		});
+
+		it("should withdraw DAI tokens", async() => {
+			// terminate project
+			await daico.vote(0, false, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(0, false, {from: inverstorAddress4}).should.be.fulfilled;
+			await increaseTime(7 * 24 * 60 * 60);
+			await daico.createVotingByInvestor(0, VOTING_TYPE_TERMINATE_PROJECT, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(2, true, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(2, true, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(2, true, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(2, true, {from: inverstorAddress4}).should.be.fulfilled;
+			// withdraw DAI tokens
+			assert.equal(await daiToken.balanceOf(evercityMemberAddress), 0);
+			await daico.withdrawFunding({from: evercityMemberAddress}).should.be.fulfilled;
+			assert.equal(await daiToken.balanceOf(evercityMemberAddress), 3);
+		});
+	});
+
+	describe("withdrawTapPayment()", () => {
+		it("should revert if caller is not project owner", async() => {
+			await daico.withdrawTapPayment(0, {from: inverstorAddress}).should.be.rejectedWith("revert");
+		});
+
+		it("should revert if tap release is not accepted by investors", async() => {
+			await daico.withdrawTapPayment(0, {from: projectOwnerAddress}).should.be.rejectedWith("revert");
+		});
+
+		it("should revert if tap is already withdrawn", async() => {
+			await daico.vote(0, true, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress4}).should.be.fulfilled;
+			await daico.withdrawTapPayment(0, {from: projectOwnerAddress}).should.be.fulfilled;
+			await daico.withdrawTapPayment(0, {from: projectOwnerAddress}).should.be.rejectedWith("revert");
+		});
+
+		it("should create a new tap payment", async() => {
+			await daico.vote(0, true, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress4}).should.be.fulfilled;
+			await daico.withdrawTapPayment(0, {from: projectOwnerAddress}).should.be.fulfilled;
+			
+			const tapPayment = await daico.tapPayments(0);
+			assert.equal(tapPayment[0], 1);
+			assert.notEqual(tapPayment[1], 0);
+			assert.equal(tapPayment[2], true);
+		});
+
+		it("should transfer DAI tokens to project owner", async() => {
+			await daico.vote(0, true, {from: inverstorAddress}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress2}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress3}).should.be.fulfilled;
+			await daico.vote(0, true, {from: inverstorAddress4}).should.be.fulfilled;
+
+			assert.equal(await daiToken.balanceOf(projectOwnerAddress), 0);
+			await daico.withdrawTapPayment(0, {from: projectOwnerAddress}).should.be.fulfilled;
+			assert.equal(await daiToken.balanceOf(projectOwnerAddress), 1);
 		});
 	});
 

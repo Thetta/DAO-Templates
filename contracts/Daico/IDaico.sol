@@ -10,7 +10,9 @@ import "zeppelin-solidity/contracts/token/ERC20/ERC20.sol";
  * 2. Contract creates initial votings of type ReleaseTap for each tap.
  * 3. Evercity member transfers DAI tokens to DAICO contract address.
  *
- * Scenarios:
+ * ==================
+ * Common scenarios:
+ * ==================
  * # Successful voting for tap release
  * 1. Token holders votes via 'vote()'.
  * 2. Quorum reached with positive decision.
@@ -36,6 +38,27 @@ import "zeppelin-solidity/contracts/token/ERC20/ERC20.sol";
  * 3. One of the investors creates a new voting of type 'TerminateProject' via 'createVotingByInvestor()'.
  * 4. Quorum reached with positive decision.
  * 5. Evercity member withdraws left DAI tokens via 'withdrawFunding()'.
+ *
+ * ===================
+ * All scenario steps:
+ * ===================
+ * # ReleaseTap/ReleaseTapDecreasedQuorum
+ * - voting of type ReleaseTap or ReleaseTapDecreasedQuorum finishes with Accept result => project owner withdraws DAI tokens via 'withdrawTapPayment()'
+ * - voting of type ReleaseTap or ReleaseTapDecreasedQuorum finishes with Decline result => one of the investors creates a voting of type TerminateProject via 'createVotingByInvestor()'
+ * - voting of type ReleaseTap or ReleaseTapDecreasedQuorum finishes with QuorumNotReached result => evercity member creates a voting of type ReleaseTapDecreasedQuorum via 'createVotingByOwner()'
+ * - voting of type ReleaseTap or ReleaseTapDecreasedQuorum finishes with NoDecision result => one of the investors creates a voting of type ChangeRoadmap via 'createVotingByInvestor()'
+ * 
+ * # ChangeRoadmap/ChangeRoadmapDecreasedQuorum
+ * - voting of type ChangeRoadmap or ChangeRoadmapDecreasedQuorum finishes with Accept result => project owner withdraws DAI tokens via 'withdrawTapPayment()'
+ * - voting of type ChangeRoadmap or ChangeRoadmapDecreasedQuorum finishes with Decline result => one of the investors creates a voting of type TerminateProject via 'createVotingByInvestor()'
+ * - voting of type ChangeRoadmap or ChangeRoadmapDecreasedQuorum finishes with QuorumNotReached result => one of the investors creates a voting of type ChangeRoadmapDecreasedQuorum via 'createVotingByInvestor()'
+ * - voting of type ChangeRoadmap or ChangeRoadmapDecreasedQuorum finishes with NoDecision result => one of the investors creates a voting of type ChangeRoadmapDecreasedQuorum via 'createVotingByInvestor()'
+ *
+ * # TerminateProject/TerminateProjectDecreasedQuorum
+ * - voting of type TerminateProject or TerminateProjectDecreasedQuorum finishes with Accept result => evervity member withdraws DAI tokens via 'withdrawFunding()'
+ * - voting of type TerminateProject or TerminateProjectDecreasedQuorum finishes with Decline result => one of the investors creates a voting of type ChangeRoadmap via 'createVotingByInvestor()'
+ * - voting of type TerminateProject or TerminateProjectDecreasedQuorum finishes with QuorumNotReached result => one of the investors creates a voting of type TerminateProjectDecreasedQuorum via 'createVotingByInvestor()'
+ * - voting of type TerminateProject or TerminateProjectDecreasedQuorum finishes with NoDecision result => one of the investors creates a voting of type TerminateProjectDecreasedQuorum via 'createVotingByInvestor()'
  */
 contract IDaico is Ownable {
 
@@ -121,8 +144,16 @@ contract IDaico is Ownable {
 	function getVotingResult(uint _votingIndex) public view returns(VotingResult);
 
 	/**
+	 * @dev Checks whether investor already voted in particular voting
+	 * @param _votingIndex voting index
+	 * @param _investorAddress investor address
+	 * @return whether investor has already voted in particular voting
+	 */
+	function isInvestorVoted(uint _votingIndex, address _investorAddress) external view returns(bool);
+
+	/**
 	 * @dev Checks whether project is terminated. 
-	 * Project is terminated when the last voting is of type TerminateProject with Accept result.
+	 * Project is terminated when the last voting is of type TerminateProject/TerminateProjectDecreasedQuorum  with Accept result.
 	 * When project is terminated contract owner(evercity member) can withdraw DAI tokens via 'withdrawFunding()'.
 	 * @return is project terminated
 	 */
@@ -140,7 +171,7 @@ contract IDaico is Ownable {
 	 */
 
 	/**
-	 * @dev Creates a new voting by investor. Investor can create 2 types of votings: change roadmap and terminate project
+	 * @dev Creates a new voting by investor. Investors can create votings of 4 types: ChangeRoadmap, ChangeRoadmapDecreasedQuorum, TerminateProject, TerminateProjectDecreasedQuorum.
 	 * @param _tapIndex tap index
 	 * @param _votingType voting type
 	 */
@@ -153,6 +184,7 @@ contract IDaico is Ownable {
 	 * - Valid voting index
 	 * - Is valid voting period
 	 * - Investor hasn't voted earlier for this proposal
+	 * - Project is not terminated
 	 * @param _votingIndex voting index
 	 * @param _isYes decision, yes or no
 	 */
@@ -163,7 +195,7 @@ contract IDaico is Ownable {
 	 */
 
 	/**
-	 * @dev Creates a new voting by owner. Owner can create 1 type of votings: tap release with decreased quorum rate
+	 * @dev Creates a new voting by owner. Owner can create votings only of type ReleaseTapDecreasedQuorum
 	 * @param _tapIndex tap index
 	 * @param _votingType voting type
 	 */
