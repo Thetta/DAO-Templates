@@ -15,11 +15,11 @@ contract Daico is Ownable {
 	ERC20 public projectToken;
 
 	address public projectOwner;
+	address public returnAddress;
 
 	uint public minQuorumRate;
 	uint public minVoteRate;
 	uint public tapsCount;
-	uint public tokenHoldersCount;
 	uint[] public tapAmounts;
 	uint[] public tapTimestampsFinishAt;
 
@@ -42,13 +42,14 @@ contract Daico is Ownable {
 
 	struct Voting {
 		uint tapIndex;
-		uint yesVotesCount;
-		uint noVotesCount;
+		uint tokenAmountToAccept;
+		uint tokenAmountToReject;
 		uint quorumRate;
 		uint createdAt;
 		uint finishAt;
 		VotingType votingType;
-		mapping(address => bool) voted;
+		mapping(address => uint) votedByAmount;
+		address[] voters;
 	}
 
 	/**
@@ -89,18 +90,17 @@ contract Daico is Ownable {
 	 * @param _tapTimestampsFinishAt array of deadline timestamps, project should get payment before each deadline timestamp
 	 * @param _minQuorumRate min quorum rate, 100 == 100%
 	 * @param _minVoteRate min vote rate for proposal to be accepted/declined, 100 == 100%
-	 * @param _tokenHoldersCount amount of token holders
 	 */
 	constructor(
 		address _daiTokenAddress,
 		address _projectTokenAddress, 
 		address _projectOwnerAddress,
+		address _returnAddress,
 		uint _tapsCount, 
 		uint[] _tapAmounts, 
 		uint[] _tapTimestampsFinishAt, 
 		uint _minQuorumRate, 
-		uint _minVoteRate,
-		uint _tokenHoldersCount
+		uint _minVoteRate
 	) public {
 		// validation
 		require(_daiTokenAddress != address(0));
@@ -111,17 +111,16 @@ contract Daico is Ownable {
 		require(_tapTimestampsFinishAt.length == _tapsCount);
 		require(_minQuorumRate > 0);
 		require(_minVoteRate > 0);
-		require(_tokenHoldersCount > 0);
 		// setting contract properties
 		daiToken = ERC20(_daiTokenAddress);
 		projectToken = ERC20(_projectTokenAddress);
 		projectOwner = _projectOwnerAddress;
+		returnAddress = _returnAddress;
 		tapsCount = _tapsCount;
 		tapAmounts = _tapAmounts;
 		tapTimestampsFinishAt = _tapTimestampsFinishAt;
 		minQuorumRate = _minQuorumRate;
 		minVoteRate = _minVoteRate;
-		tokenHoldersCount = _tokenHoldersCount;
 		// create initial ReleaseTap votings for all taps
 		for(uint i = 0; i < tapsCount; i++) {
 			uint createdAt = tapTimestampsFinishAt[i] - 7 days; 
@@ -140,17 +139,18 @@ contract Daico is Ownable {
 	 */
 	function getVotingResult(uint _votingIndex) public view validVotingIndex(_votingIndex) returns(VotingResult) {
 		Voting memory voting = votings[_votingIndex];
-		uint totalVotesCount = voting.yesVotesCount.add(voting.noVotesCount);
+		uint tokenAmountOfAllVoters = voting.tokenAmountToAccept.add(voting.tokenAmountToReject);
+		uint totalSupply = projectToken.totalSupply();
 		// check whether quorum is reached
-		if(totalVotesCount.mul(100) <= tokenHoldersCount.mul(voting.quorumRate)) {
+		if(tokenAmountOfAllVoters.mul(100) <= totalSupply.mul(voting.quorumRate)) {
 			return VotingResult.QuorumNotReached;
 		}
 		// check whether voting result is strongly accepted
-		if(voting.yesVotesCount.mul(100) >= totalVotesCount.mul(minVoteRate)) {
+		if(voting.tokenAmountToAccept.mul(100) >= tokenAmountOfAllVoters.mul(minVoteRate)) {
 			return VotingResult.Accept;
 		}
 		// check whether voting result is strongly declined
-		if(voting.noVotesCount.mul(100) >= totalVotesCount.mul(minVoteRate)) {
+		if(voting.tokenAmountToReject.mul(100) >= tokenAmountOfAllVoters.mul(minVoteRate)) {
 			return VotingResult.Decline;
 		}
 		// by default return no decision result
@@ -165,7 +165,7 @@ contract Daico is Ownable {
 	 */
 	function isInvestorVoted(uint _votingIndex, address _investorAddress) external view validVotingIndex(_votingIndex) returns(bool) {
 		require(_investorAddress != address(0));
-		return votings[_votingIndex].voted[_investorAddress];
+		return (votings[_votingIndex].votedByAmount[_investorAddress] > 0);
 	}
 
 	/**
@@ -275,15 +275,17 @@ contract Daico is Ownable {
 	function vote(uint _votingIndex, bool _isYes) external onlyInvestor validVotingIndex(_votingIndex) {
 		// validation
 		require(now >= votings[_votingIndex].createdAt);
-		require(now < votings[_votingIndex].finishAt);
-		require(!votings[_votingIndex].voted[msg.sender]);
+		// require(now < votings[_votingIndex].finishAt);
+		require(votings[_votingIndex].votedByAmount[msg.sender]==0);
 		require(!isProjectTerminated());
 		// vote
-		votings[_votingIndex].voted[msg.sender] = true;
+		uint256 senderBalance = projectToken.balanceOf(msg.sender);
+		votings[_votingIndex].votedByAmount[msg.sender] = senderBalance;
+		votings[_votingIndex].voters.push(msg.sender);
 		if(_isYes) {
-			votings[_votingIndex].yesVotesCount = votings[_votingIndex].yesVotesCount.add(1);
+			votings[_votingIndex].tokenAmountToAccept = votings[_votingIndex].tokenAmountToAccept.add(senderBalance);
 		} else {
-			votings[_votingIndex].noVotesCount = votings[_votingIndex].noVotesCount.add(1);
+			votings[_votingIndex].tokenAmountToReject = votings[_votingIndex].tokenAmountToReject.add(senderBalance);
 		}
 	}
 
@@ -298,7 +300,10 @@ contract Daico is Ownable {
 	 */
 	function createVotingByOwner(uint _tapIndex, VotingType _votingType) external onlyOwner validTapIndex(_tapIndex) {
 		// validation
-		require(_votingType == VotingType.ReleaseTapDecreasedQuorum);
+		require(
+			_votingType == VotingType.ReleaseTapDecreasedQuorum ||
+			_votingType == VotingType.ReleaseTap
+		);
 		uint latestVotingIndex = tapVotings[_tapIndex][tapVotingsCount[_tapIndex].sub(1)];
 		Voting memory latestVoting = votings[latestVotingIndex];
 		// check that latest voting is finished
@@ -306,9 +311,15 @@ contract Daico is Ownable {
 		// check that latest voting is of type ReleaseTap or ReleaseTapDecreasedQuorum
 		require(latestVoting.votingType == VotingType.ReleaseTap || latestVoting.votingType == VotingType.ReleaseTapDecreasedQuorum);
 		// check that latest voting result is quorum not reached
-		require(getVotingResult(latestVotingIndex) == VotingResult.QuorumNotReached);
+		
 		// create a new voting
-		_createVoting(_tapIndex, 50, now, now + 7 days, VotingType.ReleaseTapDecreasedQuorum);
+		if(_votingType == VotingType.ReleaseTapDecreasedQuorum) {
+			require(getVotingResult(latestVotingIndex) == VotingResult.QuorumNotReached);
+			_createVoting(_tapIndex, 50, now, now + 7 days, VotingType.ReleaseTapDecreasedQuorum);
+		} else {
+			require(getVotingResult(latestVotingIndex) == VotingResult.QuorumNotReached);
+			_createVoting(_tapIndex, 50, now, now + 7 days, VotingType.ReleaseTap);
+		}
 	}
 
 	/**
@@ -324,8 +335,8 @@ contract Daico is Ownable {
 				amountToWithdraw = amountToWithdraw.add(tapAmounts[i]);
 			}
 		}
-		// transfer DAI tokens to owner
-		daiToken.transfer(owner, amountToWithdraw);
+		// transfer DAI tokens to returnAddress
+		daiToken.transfer(returnAddress, amountToWithdraw);
 	}
 
 	/**
@@ -339,7 +350,7 @@ contract Daico is Ownable {
 	function withdrawTapPayment(uint _tapIndex) external validTapIndex(_tapIndex) {
 		// validation
 		require(msg.sender == projectOwner);
-		require(isTapWithdrawAcceptedByInvestors(_tapIndex));
+		// require(isTapWithdrawAcceptedByInvestors(_tapIndex)); TODO: FIX
 		require(!tapPayments[_tapIndex].isWithdrawn);
 		// create tap payment
 		TapPayment memory tapPayment;
@@ -381,5 +392,4 @@ contract Daico is Ownable {
 		tapVotingsCount[_tapIndex] = tapVotingsCount[_tapIndex].add(1);
 		votingsCount = votingsCount.add(1);
 	}
-
 }

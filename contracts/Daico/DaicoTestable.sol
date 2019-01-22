@@ -10,22 +10,22 @@ contract DaicoTestable is Daico {
 		address _daiTokenAddress,
 		address _projectTokenAddress, 
 		address _projectOwnerAddress,
+		address _returnAddress,
 		uint _tapsCount, 
 		uint[] _tapAmounts, 
 		uint[] _tapTimestampsFinishAt, 
 		uint _minQuorumRate, 
-		uint _minVoteRate,
-		uint _tokenHoldersCount
+		uint _minVoteRate
 	) public Daico(
 		_daiTokenAddress,
 		_projectTokenAddress,
 		_projectOwnerAddress,
+		_returnAddress,
 		_tapsCount,
 		_tapAmounts,
 		_tapTimestampsFinishAt,
 		_minQuorumRate,
-		_minVoteRate,
-		_tokenHoldersCount
+		_minVoteRate
 	) {}
 
 	function createVoting(uint _tapIndex, uint _quorumRate, uint _createdAt, uint _finishAt, VotingType _votingType) external {

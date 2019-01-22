@@ -4,8 +4,7 @@ const { increaseTime } = require("./utils/helpers");
 const Daico = artifacts.require("DaicoTestable");
 const MintableToken = artifacts.require("MintableToken");
 
-contract("Daico", (accounts) => {
-
+contract("Daico unit tests", (accounts) => {
 	const evercityMemberAddress = accounts[0];
 	const projectOwnerAddress = accounts[1];
 	const inverstorAddress = accounts[2];
@@ -13,6 +12,8 @@ contract("Daico", (accounts) => {
 	const inverstorAddress3 = accounts[4];
 	const inverstorAddress4 = accounts[5];
 	const inverstorAddress5 = accounts[6];
+	const returnAddress = accounts[7];
+	const otherAddress = accounts[8];
 
 	const VOTING_TYPE_RELEASE_TAP = 0;
 	const VOTING_TYPE_RELEASE_TAP_DECREASED_QUORUM = 1;
@@ -28,7 +29,6 @@ contract("Daico", (accounts) => {
 
 	const minQuorumRate = 70;
 	const minVoteRate = 70;
-	const tokenHoldersCount = 5;
 
 	let daico;
 	let daiToken;
@@ -49,49 +49,45 @@ contract("Daico", (accounts) => {
 			moment.unix(web3.eth.getBlock("latest").timestamp).add(1, 'week').unix(),
 			moment.unix(web3.eth.getBlock("latest").timestamp).add(5, 'weeks').unix()
 		];
-		daico = await Daico.new(daiToken.address, projectToken.address, projectOwnerAddress, 2, [1, 2], timestampsFinishAt, minVoteRate, minQuorumRate, tokenHoldersCount);
+		daico = await Daico.new(daiToken.address, projectToken.address, projectOwnerAddress, returnAddress, 2, [1, 2], timestampsFinishAt, minVoteRate, minQuorumRate);
 		await daiToken.transfer(daico.address, 3, {from: evercityMemberAddress});
 	});
 
 	describe("constructor()", () => {
 		it("should revert if DAI token address is 0x00", async() => {
-			await Daico.new(0x00, projectToken.address, projectOwnerAddress, 2, [1, 2], timestampsFinishAt, minVoteRate, minQuorumRate, tokenHoldersCount).should.be.rejectedWith("revert");
+			await Daico.new(0x00, projectToken.address, projectOwnerAddress, returnAddress, 2, [1, 2], timestampsFinishAt, minVoteRate, minQuorumRate).should.be.rejectedWith("revert");
 		});
 
 		it("should revert if project token address is 0x00", async() => {
-			await Daico.new(daiToken.address, 0x00, projectOwnerAddress, 2, [1, 2], timestampsFinishAt, minVoteRate, minQuorumRate, tokenHoldersCount).should.be.rejectedWith("revert");
+			await Daico.new(daiToken.address, 0x00, projectOwnerAddress, returnAddress, 2, [1, 2], timestampsFinishAt, minVoteRate, minQuorumRate).should.be.rejectedWith("revert");
 		});
 
 		it("should revert if project owner address is 0x00", async() => {
-			await Daico.new(daiToken.address, projectToken.address, 0x00, 2, [1, 2], timestampsFinishAt, minVoteRate, minQuorumRate, tokenHoldersCount).should.be.rejectedWith("revert");
+			await Daico.new(daiToken.address, projectToken.address, 0x00, returnAddress, 2, [1, 2], timestampsFinishAt, minVoteRate, minQuorumRate).should.be.rejectedWith("revert");
 		});
 
 		it("should revert if taps count is 0", async() => {
-			await Daico.new(daiToken.address, projectToken.address, projectOwnerAddress, 0, [1, 2], timestampsFinishAt, minVoteRate, minQuorumRate, tokenHoldersCount).should.be.rejectedWith("revert");
+			await Daico.new(daiToken.address, projectToken.address, projectOwnerAddress, returnAddress, 0, [1, 2], timestampsFinishAt, minVoteRate, minQuorumRate).should.be.rejectedWith("revert");
 		});
 
 		it("should revert if tap amounts array length not equal to taps count", async() => {
-			await Daico.new(daiToken.address, projectToken.address, projectOwnerAddress, 2, [], timestampsFinishAt, minVoteRate, minQuorumRate, tokenHoldersCount).should.be.rejectedWith("revert");
+			await Daico.new(daiToken.address, projectToken.address, projectOwnerAddress, returnAddress, 2, [], timestampsFinishAt, minVoteRate, minQuorumRate).should.be.rejectedWith("revert");
 		});
 
 		it("should revert if tap timestamps finish at array length not equal to taps count", async() => {
-			await Daico.new(daiToken.address, projectToken.address, projectOwnerAddress, 2, [1, 2], [], minVoteRate, minQuorumRate, tokenHoldersCount).should.be.rejectedWith("revert");
+			await Daico.new(daiToken.address, projectToken.address, projectOwnerAddress, returnAddress, 2, [1, 2], [], minVoteRate, minQuorumRate).should.be.rejectedWith("revert");
 		});
 
 		it("should revert if min quorum rate is 0", async() => {
-			await Daico.new(daiToken.address, projectToken.address, projectOwnerAddress, 2, [1, 2], timestampsFinishAt, 0, minVoteRate, tokenHoldersCount).should.be.rejectedWith("revert");
+			await Daico.new(daiToken.address, projectToken.address, projectOwnerAddress, returnAddress, 2, [1, 2], timestampsFinishAt, 0, minVoteRate).should.be.rejectedWith("revert");
 		});
 
 		it("should revert if min vote rate is 0", async() => {
-			await Daico.new(daiToken.address, projectToken.address, projectOwnerAddress, 2, [1, 2], timestampsFinishAt, minQuorumRate, 0, tokenHoldersCount).should.be.rejectedWith("revert");
-		});
-
-		it("should revert if token holders count is 0", async() => {
-			await Daico.new(daiToken.address, projectToken.address, projectOwnerAddress, 2, [1, 2], timestampsFinishAt, minQuorumRate, minVoteRate, 0).should.be.rejectedWith("revert");
+			await Daico.new(daiToken.address, projectToken.address, projectOwnerAddress, returnAddress, 2, [1, 2], timestampsFinishAt, 0, minQuorumRate).should.be.rejectedWith("revert");
 		});
 
 		it("should set contract properties", async() => {
-			const daicoNew = await Daico.new(daiToken.address, projectToken.address, projectOwnerAddress, 2, [1, 2], [3,4], 3, 4, 5).should.be.fulfilled;
+			const daicoNew = await Daico.new(daiToken.address, projectToken.address, projectOwnerAddress, returnAddress, 2, [1, 2], [3,4], 3, 4).should.be.fulfilled;
 			assert.equal(await daicoNew.daiToken(), daiToken.address);
 			assert.equal(await daicoNew.projectToken(), projectToken.address);
 			assert.equal(await daicoNew.projectOwner(), projectOwnerAddress);
@@ -102,7 +98,7 @@ contract("Daico", (accounts) => {
 			assert.equal(await daicoNew.tapTimestampsFinishAt(1), 4);
 			assert.equal(await daicoNew.minQuorumRate(), 3);
 			assert.equal(await daicoNew.minVoteRate(), 4);
-			assert.equal(await daicoNew.tokenHoldersCount(), 5);
+			
 		});
 
 		it("should create initial votings of type ReleaseTap", async() => {
@@ -126,7 +122,7 @@ contract("Daico", (accounts) => {
 			await daico.createVoting(0, 1, 1, 0, VOTING_TYPE_RELEASE_TAP).should.be.rejectedWith("revert");
 		});
 
-		it("should create a new voting", async() => {
+		it("should create a new voting (daico.createVoting)", async() => {
 			await daico.createVoting(0, 1, 2, 3, VOTING_TYPE_RELEASE_TAP).should.be.fulfilled;
 			const votingsCount = await daico.votingsCount();
 			const voting = await daico.votings(votingsCount.sub(1));
@@ -336,10 +332,9 @@ contract("Daico", (accounts) => {
 			await daico.createVotingByOwner(0, VOTING_TYPE_RELEASE_TAP_DECREASED_QUORUM, {from: evercityMemberAddress}).should.be.rejectedWith("revert");
 		});
 
-		it("should create a new voting", async() => {
+		it("should create a new voting createVotingByOwner", async() => {
 			await daico.vote(0, true, {from: inverstorAddress}).should.be.fulfilled;
 			await daico.vote(0, true, {from: inverstorAddress2}).should.be.fulfilled;
-			await daico.vote(0, true, {from: inverstorAddress3}).should.be.fulfilled;
 			await increaseTime(7 * 24 * 60 * 60);
 			await daico.createVotingByOwner(0, VOTING_TYPE_RELEASE_TAP_DECREASED_QUORUM, {from: evercityMemberAddress}).should.be.fulfilled;
 		});
@@ -349,8 +344,7 @@ contract("Daico", (accounts) => {
 		it("should return quorum not reached", async() => {
 			await daico.vote(0, true, {from: inverstorAddress}).should.be.fulfilled;
 			await daico.vote(0, true, {from: inverstorAddress2}).should.be.fulfilled;
-			await daico.vote(0, true, {from: inverstorAddress3}).should.be.fulfilled;
-			assert.equal(await daico.getVotingResult(0), VOTING_RESULT_QUORUM_NOT_REACHED);
+			assert.equal(new web3.BigNumber(await daico.getVotingResult(0)).toNumber(), VOTING_RESULT_QUORUM_NOT_REACHED);
 		});
 
 		it("should return accept", async() => {
@@ -358,7 +352,7 @@ contract("Daico", (accounts) => {
 			await daico.vote(0, true, {from: inverstorAddress2}).should.be.fulfilled;
 			await daico.vote(0, true, {from: inverstorAddress3}).should.be.fulfilled;
 			await daico.vote(0, true, {from: inverstorAddress4}).should.be.fulfilled;
-			assert.equal(await daico.getVotingResult(0), VOTING_RESULT_ACCEPT);
+			assert.equal(new web3.BigNumber(await daico.getVotingResult(0)).toNumber(), VOTING_RESULT_ACCEPT);
 		});
 
 		it("should return decline", async() => {
@@ -402,13 +396,11 @@ contract("Daico", (accounts) => {
 			await daico.vote(0, false, {from: inverstorAddress}).should.be.fulfilled;
 			await daico.vote(0, false, {from: inverstorAddress2}).should.be.fulfilled;
 			await daico.vote(0, false, {from: inverstorAddress3}).should.be.fulfilled;
-			await daico.vote(0, false, {from: inverstorAddress4}).should.be.fulfilled;
 			await increaseTime(7 * 24 * 60 * 60);
 			await daico.createVotingByInvestor(0, VOTING_TYPE_TERMINATE_PROJECT, {from: inverstorAddress}).should.be.fulfilled;
 			await daico.vote(2, true, {from: inverstorAddress}).should.be.fulfilled;
 			await daico.vote(2, true, {from: inverstorAddress2}).should.be.fulfilled;
 			await daico.vote(2, true, {from: inverstorAddress3}).should.be.fulfilled;
-			await daico.vote(2, true, {from: inverstorAddress4}).should.be.fulfilled;
 			assert.equal(await daico.isProjectTerminated(), true);
 		});
 	});
@@ -433,7 +425,7 @@ contract("Daico", (accounts) => {
 		});
 
 		it("should revert if it is too late to vote", async() => {
-			const daicoNew = await Daico.new(daiToken.address, projectToken.address, projectOwnerAddress, 2, [1, 2], timestampsFinishAt, minVoteRate, minQuorumRate, tokenHoldersCount);
+			const daicoNew = await Daico.new(daiToken.address, projectToken.address, projectOwnerAddress, returnAddress, 2, [1, 2], timestampsFinishAt, minVoteRate, minQuorumRate);
 			await increaseTime(7 * 24 * 60 * 60);
 			await daicoNew.vote(0, true, {from: inverstorAddress}).should.be.rejectedWith("revert");
 		});
@@ -443,13 +435,11 @@ contract("Daico", (accounts) => {
 			await daico.vote(0, false, {from: inverstorAddress}).should.be.fulfilled;
 			await daico.vote(0, false, {from: inverstorAddress2}).should.be.fulfilled;
 			await daico.vote(0, false, {from: inverstorAddress3}).should.be.fulfilled;
-			await daico.vote(0, false, {from: inverstorAddress4}).should.be.fulfilled;
 			await increaseTime(7 * 24 * 60 * 60);
 			await daico.createVotingByInvestor(0, VOTING_TYPE_TERMINATE_PROJECT, {from: inverstorAddress}).should.be.fulfilled;
 			await daico.vote(2, true, {from: inverstorAddress}).should.be.fulfilled;
 			await daico.vote(2, true, {from: inverstorAddress2}).should.be.fulfilled;
 			await daico.vote(2, true, {from: inverstorAddress3}).should.be.fulfilled;
-			await daico.vote(2, true, {from: inverstorAddress4}).should.be.fulfilled;
 
 			await daico.vote(2, false, {from: inverstorAddress5}).should.be.rejectedWith("revert");
 		});
@@ -488,17 +478,15 @@ contract("Daico", (accounts) => {
 			await daico.vote(0, false, {from: inverstorAddress}).should.be.fulfilled;
 			await daico.vote(0, false, {from: inverstorAddress2}).should.be.fulfilled;
 			await daico.vote(0, false, {from: inverstorAddress3}).should.be.fulfilled;
-			await daico.vote(0, false, {from: inverstorAddress4}).should.be.fulfilled;
 			await increaseTime(7 * 24 * 60 * 60);
 			await daico.createVotingByInvestor(0, VOTING_TYPE_TERMINATE_PROJECT, {from: inverstorAddress}).should.be.fulfilled;
 			await daico.vote(2, true, {from: inverstorAddress}).should.be.fulfilled;
 			await daico.vote(2, true, {from: inverstorAddress2}).should.be.fulfilled;
 			await daico.vote(2, true, {from: inverstorAddress3}).should.be.fulfilled;
-			await daico.vote(2, true, {from: inverstorAddress4}).should.be.fulfilled;
 			// withdraw DAI tokens
-			assert.equal(await daiToken.balanceOf(evercityMemberAddress), 0);
+			assert.equal(await daiToken.balanceOf(returnAddress), 0);
 			await daico.withdrawFunding({from: evercityMemberAddress}).should.be.fulfilled;
-			assert.equal(await daiToken.balanceOf(evercityMemberAddress), 3);
+			assert.equal(await daiToken.balanceOf(returnAddress), 3);
 		});
 	});
 
@@ -544,5 +532,35 @@ contract("Daico", (accounts) => {
 			assert.equal(await daiToken.balanceOf(projectOwnerAddress), 1);
 		});
 	});
+
+	describe("onlyInvestor()", () => {
+		it("should revert if method is called not by investor", async() => {
+			await daico.vote(0, true, {from: otherAddress}).should.be.rejectedWith("revert");
+		});
+
+		it("should call method that can be executed only by investor", async() => {
+			await daico.vote(0, true, {from: inverstorAddress}).should.be.fulfilled;
+		});
+	});
+
+	describe("validTapIndex()", () => {
+		it("should revert if tap index does not exist", async() => {
+			await daico.isTapWithdrawAcceptedByInvestors(2).should.be.rejectedWith("revert");
+		});
+
+		it("should call method with valid tap index", async() => {
+			await daico.isTapWithdrawAcceptedByInvestors(1).should.be.fulfilled;
+		});
+	});
+
+	describe("validVotingIndex()", () => {
+		it("should revert if voting index does not exist", async() => {
+			await daico.vote(2, true, {from: inverstorAddress}).should.be.rejectedWith("revert");
+		});
+
+		it("should call method with valid tap index", async() => {
+			await daico.vote(0, true, {from: inverstorAddress}).should.be.fulfilled;
+		});
+	});	
 
 });
