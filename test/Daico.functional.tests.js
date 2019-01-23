@@ -1,6 +1,6 @@
 const moment = require("moment");
 
-const Daico = artifacts.require("DaicoTestable");
+const Daico = artifacts.require("Daico");
 const MintableToken = artifacts.require("MintableToken");
 
 const { increaseTime } = require("./utils/helpers");
@@ -44,10 +44,12 @@ contract("Daico functional tests", (accounts) => {
 			// 1.1. evercityMember деплоит daiToken
 			daiToken = await MintableToken.new({from: evercityMember1});
 			
-			// 1.2. У двух evercityMember появляются daiToken
-			await daiToken.mint(evercityMember1, 100, {from: evercityMember1});
-			await daiToken.mint(evercityMember2, 150, {from: evercityMember1});
-			
+			// 1.2. У ду инвесторов появляются daiToken
+			await daiToken.mint(inverstor1, 200, {from: projectOwner});
+			await daiToken.mint(inverstor2, 501, {from: projectOwner});
+			await daiToken.mint(inverstor3, 150, {from: projectOwner});
+			await daiToken.mint(inverstor4, 149, {from: projectOwner});
+
 			// 1.3. projectOwner деплоит projectToken
 			projectToken = await MintableToken.new({from: projectOwner});
 			
@@ -62,11 +64,13 @@ contract("Daico functional tests", (accounts) => {
 				// узнает daiToken, returnFunds
 				// деплоит Daico контракт
 				// evercityMember1 и evercityMember2 проверяют все значения (например, что returnFunds тот самый, иначе projectOwner может смошенничать)
-			timestampsFinishAt = [
-				moment.unix(web3.eth.getBlock("latest").timestamp).add(1, 'week').unix(),
-				moment.unix(web3.eth.getBlock("latest").timestamp).add(1, 'week').unix(),
-				moment.unix(web3.eth.getBlock("latest").timestamp).add(1, 'week').unix()
-			];		
+			
+			tapDurations = [
+				7 * days,
+				7 * days,
+				7 * days
+			];	
+
 			daico = await Daico.new(daiToken.address, projectToken.address, projectOwner, returnFunds, 3, [50, 100, 100], timestampsFinishAt, minVoteRate, minQuorumRate, {from: projectOwner});
 			
 			// 1.6. evercityMember1 и evercityMember2 переводят токены на Daico адрес, который им дал projectOwner
@@ -77,8 +81,8 @@ contract("Daico functional tests", (accounts) => {
 		it("1. Стандартный сценарий: все идет хорошо", async() => {
 			// 1.7. Первая стадия голосования наступает автоматически, создавать голосование не требуется
 			//	 minVoteRate == minQuorumRate == 70%, то есть голосов inverstor1 (200/1000) и inverstor2 (501/1000) достаточно, чтобы перейти на следующий stage
-			await daico.vote(0, true, {from: inverstor1}).should.be.fulfilled;
-			await daico.vote(0, true, {from: inverstor2}).should.be.fulfilled;
+			// await daico.vote(0, true, {from: inverstor1}).should.be.fulfilled;
+			// await daico.vote(0, true, {from: inverstor2}).should.be.fulfilled;
 		
 			// 1.8. Проходит неделя и projectOwner снимает часть средств.			
 			assert.equal(await daiToken.balanceOf(projectOwner), 0);
@@ -88,22 +92,20 @@ contract("Daico functional tests", (accounts) => {
 			// 1.9. Проходит неделя, projectOwner создает новое голосование и инвесторы голосуют по новой.
 			await increaseTime(7 * days);
 			await daico.createVotingByOwner(1, VOTING_TYPE_RELEASE_TAP, {from: projectOwner});
-			
+			await daico.vote(1, true, {from: inverstor1}).should.be.fulfilled;
 			await daico.vote(1, true, {from: inverstor2}).should.be.fulfilled;
-			await daico.vote(1, true, {from: inverstor3}).should.be.fulfilled;
-			await daico.vote(1, true, {from: inverstor4}).should.be.fulfilled;
 			await daico.withdrawTapPayment(1, {from: projectOwner}).should.be.fulfilled;
 
 			// 1.10. И Снова
 			await increaseTime(7 * days);
 			await daico.createVotingByOwner(2, VOTING_TYPE_RELEASE_TAP, {from: projectOwner});
+			await daico.vote(2, true, {from: inverstor1}).should.be.fulfilled;
 			await daico.vote(2, true, {from: inverstor2}).should.be.fulfilled;
-			await daico.vote(2, true, {from: inverstor3}).should.be.fulfilled;
-			await daico.vote(2, true, {from: inverstor4}).should.be.fulfilled;
 			await daico.withdrawTapPayment(2, {from: projectOwner}).should.be.fulfilled;	
 
 			// Проверяем баланс – projectOwner должен был получить все daiToken, которые проинвестировали
-			assert.equal(await daiToken.balanceOf(projectOwner), 250);
+			assert.equal(await daiToken.balanceOf(projectOwner), 280);
+
 		});
 	});
 });

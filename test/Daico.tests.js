@@ -1,7 +1,7 @@
 const moment = require("moment");
 const { increaseTime } = require("./utils/helpers");
 
-const Daico = artifacts.require("DaicoTestable");
+const Daico = artifacts.require("Daico");
 const MintableToken = artifacts.require("MintableToken");
 
 contract("Daico unit tests", (accounts) => {

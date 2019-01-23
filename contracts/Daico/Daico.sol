@@ -1,395 +1,410 @@
 pragma solidity ^0.4.24;
 
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
-import "zeppelin-solidity/contracts/ownership/Ownable.sol";
 import "zeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import "zeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
 
-/**
- * @title Daico
- */
-contract Daico is Ownable {
 
+contract Daico {
 	using SafeMath for uint;
+	enum TapStage {
+		Preparing,
+		Voting,
+		VotingDQ,
+		RoadmapPreparing,
+		RoadmapVoting,
+		RoadmapVotingDQ,
+		Success,
+		Terminated
+	}
 
-	ERC20 public daiToken;
-	ERC20 public projectToken;
+	enum VotingResult {
+		QuorumNotReached,
+		ConsensusNotReached,
+		Success,
+		Decline
+	}
 
-	address public projectOwner;
-	address public returnAddress;
+	Project public proj;
 
-	uint public minQuorumRate;
-	uint public minVoteRate;
-	uint public tapsCount;
-	uint[] public tapAmounts;
-	uint[] public tapTimestampsFinishAt;
-
-	enum VotingType { ReleaseTap, ReleaseTapDecreasedQuorum, ChangeRoadmap, ChangeRoadmapDecreasedQuorum, TerminateProject, TerminateProjectDecreasedQuorum }
-	enum VotingResult { Accept, Decline, QuorumNotReached, NoDecision }
-
-	mapping(uint => mapping(uint => uint)) public tapVotings;
-	mapping(uint => uint) public tapVotingsCount;
-
-	mapping(uint => Voting) public votings;
-	uint public votingsCount;
-
-	mapping(uint => TapPayment) public tapPayments;
-
-	struct TapPayment {
-		uint amount;
+	struct Project {
+		bool isActive;
+		address owner;
+		MintableToken token;
+		ERC20 daiToken;
 		uint createdAt;
-		bool isWithdrawn;
+		uint startedAt;
+		uint investDuration;
+		uint votingDuration;
+		uint additionalDuration;
+		uint changeRoadmapDuration;
+		uint quorumPercent;
+		uint quorumDecresedPercent;
+		uint declinePercent;
+		uint consensusPercent;
+		Tap[] taps;
+		Tap[] proposedTaps;
+		Investor[] investors;
+	}
+
+	struct Investor {
+		address addr;
+		uint invested;
+	}
+
+	struct Tap {
+		uint funds;
+		uint duration;
+		bool isWithdrawed;
+		mapping(uint => Voting) votings; // 0, 1, 2, 3 – max
 	}
 
 	struct Voting {
-		uint tapIndex;
-		uint tokenAmountToAccept;
-		uint tokenAmountToReject;
-		uint quorumRate;
-		uint createdAt;
-		uint finishAt;
-		VotingType votingType;
-		mapping(address => uint) votedByAmount;
-		address[] voters;
+		uint pro;
+		uint versus;
+		address[] voted;
+	}	
+
+	function nonZero(bytes32 _target) public view returns(bool) {
+		return (_target == bytes32(0));
 	}
 
-	/**
-	 * Modifiers
-	 */
+	// owner создает Daico контракт, куда закладываются следующие параметры:
+	// 1. daiToken – токен Evercity
+	// 2. returnAddress - куда вернуть деньги в случае фейла проекта
+	// 3. tapFunds – массив количества выплат на каждый tap
+	// 4. tapDurations – массив длительностей каждого tap
+	// В конструкторе деплоится projectToken, которые будут получать investors в обмен на daiToken
+	constructor(address _owner, address _daiToken, address _returnAddress, uint[] memory _tapFunds, uint[] memory _tapDurations) public {
+		require(_tapFunds.length == _tapDurations.length);
+		// require(nonZero(bytes32(_owner)) && nonZero(bytes32(_daiToken)) && nonZero(bytes32(_returnAddress)) && nonZero(bytes32(_tapFunds.length)));
+		MintableToken projectToken = new MintableToken();
+		proj.token = projectToken;
+		proj.daiToken = ERC20(_daiToken);
+		proj.owner = _owner;
+		proj.createdAt = now;
+		proj.investDuration = 7 days;
+		proj.votingDuration = 7 days;
+		proj.additionalDuration = 7 days;
+		proj.changeRoadmapDuration = 21 days;
+		proj.quorumPercent = 70;
+		proj.quorumDecresedPercent = 50;
+		proj.declinePercent = 80;
+		proj.consensusPercent = 70;
 
-	/**
-	 * Modifier checks that method can be called only by investor / project token holder
-	 */
-	modifier onlyInvestor() {
-		require(projectToken.balanceOf(msg.sender) > 0);
-		_;
-	}
-	
-	/**
-	 * Modifier checks that tap index exists
-	 */
-	modifier validTapIndex(uint _tapIndex) {
-		require(_tapIndex < tapsCount);
-		_;
-	}
-
-	/**
-	 * Modifier checks that voting index exists
-	 */
-	modifier validVotingIndex(uint _votingIndex) {
-		require(_votingIndex < votingsCount);
-		_;
-	}
-
-	/**
-	 * @dev Contract constructor
-	 * @param _daiTokenAddress address of the DAI token contract, project gets payments in DAI tokens
-	 * @param _projectTokenAddress project token address, investors hold this token
-	 * @param _projectOwnerAddress project owner address who can receive tap payments
-	 * @param _tapsCount how many times project should get payments, NOTICE: we can get taps count from _tapAmounts.length but contract deployer can force so that _tapsCount != _tapAmounts.length
-	 * @param _tapAmounts array of DAI token amounts in wei that describes how many tokens project gets per single stage
-	 * @param _tapTimestampsFinishAt array of deadline timestamps, project should get payment before each deadline timestamp
-	 * @param _minQuorumRate min quorum rate, 100 == 100%
-	 * @param _minVoteRate min vote rate for proposal to be accepted/declined, 100 == 100%
-	 */
-	constructor(
-		address _daiTokenAddress,
-		address _projectTokenAddress, 
-		address _projectOwnerAddress,
-		address _returnAddress,
-		uint _tapsCount, 
-		uint[] _tapAmounts, 
-		uint[] _tapTimestampsFinishAt, 
-		uint _minQuorumRate, 
-		uint _minVoteRate
-	) public {
-		// validation
-		require(_daiTokenAddress != address(0));
-		require(_projectTokenAddress != address(0));
-		require(_projectOwnerAddress != address(0));
-		require(_tapsCount > 0);
-		require(_tapAmounts.length == _tapsCount);
-		require(_tapTimestampsFinishAt.length == _tapsCount);
-		require(_minQuorumRate > 0);
-		require(_minVoteRate > 0);
-		// setting contract properties
-		daiToken = ERC20(_daiTokenAddress);
-		projectToken = ERC20(_projectTokenAddress);
-		projectOwner = _projectOwnerAddress;
-		returnAddress = _returnAddress;
-		tapsCount = _tapsCount;
-		tapAmounts = _tapAmounts;
-		tapTimestampsFinishAt = _tapTimestampsFinishAt;
-		minQuorumRate = _minQuorumRate;
-		minVoteRate = _minVoteRate;
-		// create initial ReleaseTap votings for all taps
-		for(uint i = 0; i < tapsCount; i++) {
-			uint createdAt = tapTimestampsFinishAt[i] - 7 days; 
-			_createVoting(i, minQuorumRate, createdAt, tapTimestampsFinishAt[i], VotingType.ReleaseTap);
+		require(_tapFunds.length == _tapDurations.length);
+		for(uint i = 0; i < _tapFunds.length; i++) {
+			Tap memory tap;
+			tap.funds = _tapFunds[i];
+			tap.duration = _tapDurations[i];
+			proj.taps.push(tap);
 		}
 	}
-	
-	/**
-	 * Public methods
-	 */
 
-	/**
-	 * @dev Returns voting result
-	 * @param _votingIndex voting index
-	 * @return voting result
-	 */
-	function getVotingResult(uint _votingIndex) public view validVotingIndex(_votingIndex) returns(VotingResult) {
-		Voting memory voting = votings[_votingIndex];
-		uint tokenAmountOfAllVoters = voting.tokenAmountToAccept.add(voting.tokenAmountToReject);
-		uint totalSupply = projectToken.totalSupply();
-		// check whether quorum is reached
-		if(tokenAmountOfAllVoters.mul(100) <= totalSupply.mul(voting.quorumRate)) {
+	Investor[] public investors;
+
+	// Функция инициации контракта. 
+	// Имеется общее количество daiToken, которое должно поступить на контракт перед началом процесса – Sum(tapFunds)
+	// Любой может купить любое количество оставшихся projectToken, предварительно сделав approve на то же количество daiToken
+	// Как только все projectToken проданы, контракт автоматически переходит в первый stage, и owner может снять daiToken за первый tap.
+	// Если lifetime закончился, а projectToken проданы не все, то можно вызвать returnTokens, которая вернет токены обратно инвесторам.
+	// 1. Для примера – tap.durations == 1 month, все голосования проходят успешно, тогда Timeline такой:
+	// 	 invest ----> active |---(1TAP:  1 month - 1 week: nothing)---(1TAP:  1 week: voting for a next tap)---(2TAP:  1 month - 1 week: nothing)---(2TAP:  1 week: voting for a next tap)---...
+	// 2. Не набран кворум – сразу стартует повторное голосование (7 дней) с пониженным кворумом >50%. 
+	// 	 invest ----> active |---(1TAP:  1 month - 1 week: nothing)---(1TAP:  1 week: voting for a next tap)---(1TAP:  1 additional week: voting for a next tap)---...
+	// 3. Кворум набран, но пороговый % проголосовавших «за» не пройден. В результате сразу инициируется голосование по пересмотру роадмапа и доработке проекта через месяц.
+	// 	 invest ----> active |---(1TAP:  1 month - 1 week: nothing)---(1TAP:  1 week: voting for a next tap)---(1TAP:  3 additional weeks: change roadmap)---(1TAP:  1 additional week: voting)---...
+
+	function invest(uint _amount) public {
+		require(!proj.isActive);
+		require(nonZero(bytes32(_amount)));
+		require(totalInvestitions() + _amount <= tapAmountsSum());
+		proj.daiToken.transferFrom(msg.sender, address(this), _amount);
+		proj.token.mint(msg.sender, _amount);
+		proj.investors.push(Investor(msg.sender, _amount));
+		if(totalInvestitions() + _amount == tapAmountsSum()) {
+			proj.isActive = true;
+			proj.startedAt = now;
+		}
+	}
+	function totalInvestitions() public view returns(uint sum) {
+		for(uint i = 0; i < proj.investors.length; i++) {
+			sum += proj.investors[i].invested;
+		}
+	}
+
+	function tapAmountsSum() public view returns(uint sum) {
+		for(uint t = 0; t < proj.taps.length; t++) {
+			sum += proj.taps[t].funds;
+		}
+	}
+
+	function returnTokens() external {
+		(uint t, TapStage[] memory tapStages, uint v) = getTapsInfo();
+		require(tapStages[t] == TapStage.Terminated);
+		uint remainder = 0;
+		for(uint i = 0; i < proj.taps.length; i++) {
+			if(!proj.taps[t].isWithdrawed) {
+				remainder += proj.taps[i].funds;
+			}
+		}
+
+		for(i = 0; i < proj.investors.length; i++) {
+			proj.daiToken.transfer(proj.investors[i].addr, ((remainder * proj.investors[i].invested)/tapAmountsSum()));
+		}
+	}
+
+	// Функция для снятия средств owner'ом.
+	function withdrawFundsFromTap(uint _t) external {
+		require(msg.sender == proj.owner);
+
+		(uint t, TapStage[] memory tapStages, uint v) = getTapsInfo();
+		require(tapStages[_t] == TapStage.Success);
+		proj.taps[_t].isWithdrawed = true;
+		proj.daiToken.transfer(proj.owner, proj.taps[_t].funds);
+	}
+
+	// Функция для голосования.
+	function vote(bool _vote) external {
+		require(isInvestor(msg.sender));
+
+		(uint t, TapStage[] memory tapStages, uint v) = getTapsInfo();
+		require(tapStages[t] == TapStage.Voting 
+			|| tapStages[t] == TapStage.VotingDQ 
+			|| tapStages[t] == TapStage.RoadmapVoting 
+			|| tapStages[t] == TapStage.RoadmapVotingDQ);
+	
+		require(!isVoted(proj.taps[t].votings[v].voted, msg.sender));
+
+		if(_vote) {
+			proj.taps[t].votings[v].pro += getInvestorAmount(msg.sender);
+		} else {
+			proj.taps[t].votings[v].versus += getInvestorAmount(msg.sender);
+		}
+
+		proj.taps[t].votings[v].voted.push(msg.sender);
+	}
+
+	function getInvestorAmount(address _a) public view returns(uint amount) {
+		for(uint i = 0; i < proj.investors.length; i++) {
+			if(proj.investors[i].addr == _a) {
+				amount = proj.investors[i].invested;
+			}
+		}
+	}
+
+	function isInvestor(address _a) public view returns(bool isInv) {
+		for(uint i = 0; i < proj.investors.length; i++) {
+			if(proj.investors[i].addr == _a) {
+				isInv = true;
+			}
+		}
+	}
+
+	function isVoted(address[] memory _voted, address _a) public view returns(bool isVoted) {
+		for(uint i = 0; i < _voted.length; i++) {
+			if(_voted[i] == _a) {
+				isVoted = true;
+			}
+		}
+	}
+
+	/*
+	 Общая диаграмма состояния 
+		 NOQ, NOC, SUC, DEC – соответственно QuorumNotReached, ConsensusNotReached, Success, Decline 
+		 VOT, VOTDQ, VOT_RM – голосование, голосование с пониженным кворумом, голосование за принятие roadmap
+		 PREP, RM – подготовка к голосованию, подготовка к голосованию за roadmap
+		 >>> – переход на следующий tap
+		 • – terminate
+
+	                                     | NOQ---• |15|             | NOQ---• |20|         | NOQ---• |24|
+	                                     |         |16|  |17|       |               |21|   |
+	                                     | NOC------RM--VOT_RM----* | NOC----------VOTDQ--*| NOC---• |25|
+	                            |02|     | SUC->>> |18|             | SUC->>> |22|         | SUC->>> |26|
+	                | NOQ------VOTDQ----*| DEC---• |19|             | DEC---• |23|         | DEC---• |27|
+	     |00|  |01| |
+	INV--PREP--VOT-*| SUC->>> |03|                     
+	                | DEC---• |04| 
+	                |                    | NOC---• |07|      |08|      | NOQ---• |11|
+	                | NOC--RM--VOT_RM---*| NOQ--------------VOTDQ-----*| NOC---• |12|
+	                      |05|  |06|     | SUC->>> |09|                | SUC->>> |13|
+	                                     | DEC---• |10|                | DEC---• |14|
+	*/
+
+	// check that roadmap changed
+	function getTapsInfo() public view returns(uint, TapStage[] memory, uint) {
+		require(proj.startedAt > 0);
+
+		uint votD = proj.votingDuration;
+		uint addD = proj.additionalDuration;
+		uint tapD;
+		uint rmD = proj.changeRoadmapDuration;
+		TapStage[] memory tapStages = new TapStage[](proj.taps.length);
+		uint tapStart = proj.startedAt;
+		
+		for(uint t = 0; t < proj.taps.length; t++) {
+			tapD = proj.taps[t].duration;
+
+			if(at(tapStart, tapD-votD)) {
+				tapStages[t] = TapStage.Preparing;
+				return (t, tapStages, 0);
+			} else if(at(tapStart+tapD-votD, votD)) {
+				tapStages[t] = TapStage.Voting;
+				return (t, tapStages, 0);
+			} else if(now > tapStart+tapD) {
+				if(VotingResult.Decline == votingState(t, 0, false)) {
+					tapStages[t] = TapStage.Terminated;
+					return (t, tapStages, 0);
+				} else if(VotingResult.Success == votingState(t, 0, false)) {
+					tapStages[t] = TapStage.Success;
+					tapStart += tapD;
+				} else if(VotingResult.QuorumNotReached == votingState(t, 0, false)) {
+					if(at(tapStart+tapD, addD)) {
+						tapStages[t] = TapStage.VotingDQ;
+						return (t, tapStages, 1);
+					} else if(now > tapStart+tapD+addD) {
+						if(VotingResult.QuorumNotReached == votingState(t, 1, true)) {
+							tapStages[t] = TapStage.Terminated;
+						} else if(VotingResult.Decline == votingState(t, 1, true)) {
+							tapStages[t] = TapStage.Terminated;
+							return (t, tapStages, 1);
+						} else if(VotingResult.Success == votingState(t, 1, true)) {
+							tapStages[t] = TapStage.Success;
+							tapStart += (tapD+addD);
+						} else if(VotingResult.ConsensusNotReached == votingState(t, 1, true)) {
+							if(at(tapStart+tapD+addD, rmD)) {
+								tapStages[t] = TapStage.RoadmapPreparing;
+								return (t, tapStages, 2);
+							} else if(at(tapStart+tapD+addD+rmD, votD)) {
+								tapStages[t] = TapStage.RoadmapVoting;
+								return (t, tapStages, 2);
+							} else if(now > tapStart+tapD+addD+rmD+votD) {
+								if(VotingResult.Success == votingState(t, 2, false)) {
+									tapStages[t] = TapStage.Success;
+									tapStart += (tapD+addD+rmD+votD);
+								} else if(VotingResult.ConsensusNotReached == votingState(t, 2, false)) {
+									tapStages[t] = TapStage.Terminated;
+									return (t, tapStages, 2);
+								} else if(VotingResult.Decline == votingState(t, 2, false)) {
+									tapStages[t] = TapStage.Terminated;
+									return (t, tapStages, 2);
+								} else if(VotingResult.QuorumNotReached == votingState(t, 2, false)) {
+									if(at(tapStart+tapD+addD+rmD+votD, addD)) {
+										tapStages[t] = TapStage.RoadmapVotingDQ;
+										return (t, tapStages, 3);
+									} else if(now > tapStart+tapD+addD+rmD+votD+addD) {
+										if(VotingResult.Success == votingState(t, 3, true)) {
+											tapStages[t] = TapStage.Success;
+											tapStart += (tapD+addD+rmD+votD+addD);
+										} else if(VotingResult.ConsensusNotReached == votingState(t, 3, true)) {
+											tapStages[t] = TapStage.Terminated;
+											return (t, tapStages, 3);
+										} else if(VotingResult.Decline == votingState(t, 3, true)) {
+											tapStages[t] = TapStage.Terminated;
+											return (t, tapStages, 3);
+										} else if(VotingResult.QuorumNotReached == votingState(t, 3, true)) {
+											tapStages[t] = TapStage.Terminated;
+											return (t, tapStages, 3);
+										}
+									}
+								}
+							}
+						}
+					}
+				} else if(VotingResult.ConsensusNotReached == votingState(t, 0, false)) {
+					if(at(tapStart+tapD, rmD)) {
+						tapStages[t] = TapStage.RoadmapPreparing;
+						return (t, tapStages, 1);
+					} else if(at(tapStart+tapD+rmD, votD)) {
+						tapStages[t] = TapStage.RoadmapVoting;
+						return (t, tapStages, 1);
+					} else if(now > tapStart+tapD+rmD+votD) {
+						if(VotingResult.Decline == votingState(t, 1, false)) {
+							tapStages[t] = TapStage.Terminated;
+							return (t, tapStages, 1);
+						} else if(VotingResult.Success == votingState(t, 1, false)) {
+							tapStages[t] = TapStage.Success;
+							tapStart += tapD+rmD+votD;
+						} else if(VotingResult.ConsensusNotReached == votingState(t, 1, false)) {
+							tapStages[t] = TapStage.Terminated;
+							return (t, tapStages, 1);
+						} else if(VotingResult.QuorumNotReached == votingState(t, 1, false)) {
+							if(at(tapStart+tapD+rmD+votD, addD)) {
+								tapStages[t] = TapStage.RoadmapVotingDQ;
+								return (t, tapStages, 2);
+							} else if(now > tapStart+tapD+rmD+votD+addD) {
+								if(VotingResult.Decline == votingState(t, 2, true)) {
+									tapStages[t] = TapStage.Terminated;
+									return (t, tapStages, 2);
+								} else if(VotingResult.Success == votingState(t, 2, true)) {
+									tapStages[t] = TapStage.Success;
+									tapStart += tapD+rmD+votD+addD;
+								} else if(VotingResult.ConsensusNotReached == votingState(t, 2, true)) {
+									tapStages[t] = TapStage.Terminated;
+									return (t, tapStages, 2);
+								} else if(VotingResult.QuorumNotReached == votingState(t, 2, true)) {
+									tapStages[t] = TapStage.Terminated;
+									return (t, tapStages, 2);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	/*function proposeNewRoadmap(uint[] _tapFunds, uint[] _tapDurations) external {
+		require(msg.sender == proj.owner);
+		require(nonZero(bytes32(_tapFunds.length));
+		(uint t, TapStage[] tapStages, uint v) = getTapsInfo();
+		require(tapStages[t] == TapStage.RoadmapPreparing);
+		require(_tapFunds.length == _tapDurations.length);
+		for(uint i = 0; i < _tapFunds.length; i++) {
+			Tap memory tap;
+			tap.funds = _tapFunds[i];
+			tap.duration = _tapDurations[i];
+			proj.proposedTaps.push(tap);
+		}
+		// GOTO invest stage, if need more money
+		// GOTO withdraw proficit
+		// FIX: success taps shouldn't be replaced
+	}*/
+
+	function at(uint _from, uint _long) public view returns(bool) {
+		return ((now >= _from) && (now < _from + _long));
+	}
+
+	function isQuorumReached(Voting memory _v, uint _quorumPercent) internal view returns(bool) {
+		return (_v.pro.add(_v.versus).mul(100) >= tapAmountsSum().mul(_quorumPercent));
+	}
+
+	function isConsensusReached(Voting memory _v, uint _consensusPercent) internal view returns(bool) {
+		return (_v.pro.mul(100 - _consensusPercent) >= _v.versus.mul(_consensusPercent));
+	}
+
+	function isDeclined(Voting memory _v, uint _declinePercent) internal view returns(bool) {
+		return (_v.versus.mul(100 - _declinePercent) >= _v.pro.mul(_declinePercent));
+	}
+
+	function votingState(uint _t, uint _v, bool _isQuorumDecreased) returns(VotingResult) {
+		uint quorumPercent;
+		if(_isQuorumDecreased) {
+			quorumPercent = proj.quorumDecresedPercent;
+		} else {
+			quorumPercent = proj.quorumPercent;
+		}
+		Voting memory v = proj.taps[_t].votings[_v];
+		if(isQuorumReached(v, quorumPercent)) {
+			if(isConsensusReached(v, proj.consensusPercent)) {
+				return VotingResult.Success;
+			} else if(isDeclined(v, proj.declinePercent)) {
+				return VotingResult.Decline;
+			} else {
+				return VotingResult.ConsensusNotReached;
+			}
+		} else {
 			return VotingResult.QuorumNotReached;
 		}
-		// check whether voting result is strongly accepted
-		if(voting.tokenAmountToAccept.mul(100) >= tokenAmountOfAllVoters.mul(minVoteRate)) {
-			return VotingResult.Accept;
-		}
-		// check whether voting result is strongly declined
-		if(voting.tokenAmountToReject.mul(100) >= tokenAmountOfAllVoters.mul(minVoteRate)) {
-			return VotingResult.Decline;
-		}
-		// by default return no decision result
-		return VotingResult.NoDecision;
-	}
-
-	/**
-	 * @dev Checks whether investor already voted in particular voting
-	 * @param _votingIndex voting index
-	 * @param _investorAddress investor address
-	 * @return whether investor has already voted in particular voting
-	 */
-	function isInvestorVoted(uint _votingIndex, address _investorAddress) external view validVotingIndex(_votingIndex) returns(bool) {
-		require(_investorAddress != address(0));
-		return (votings[_votingIndex].votedByAmount[_investorAddress] > 0);
-	}
-
-	/**
-	 * @dev Checks whether project is terminated
-	 * @return is project terminated
-	 */
-	function isProjectTerminated() public view returns(bool) {
-		bool isTerminated = false;
-		Voting memory latestVoting = votings[votingsCount.sub(1)];
-		// if latest voting is of type TerminateProject or TerminateProjectDecreasedQuorum and result Accept then set isTerminated to true
-		if(((latestVoting.votingType == VotingType.TerminateProject) || (latestVoting.votingType == VotingType.TerminateProjectDecreasedQuorum)) && (getVotingResult(votingsCount.sub(1)) == VotingResult.Accept)) {
-			isTerminated = true;
-		}
-		return isTerminated;
-	}
-
-	/**
-	 * @dev Checks whether tap withdraw is accepted by investors for project owner
-	 * @param _tapIndex tap index
-	 * @return whether withdraw is accepted
-	 */
-	function isTapWithdrawAcceptedByInvestors(uint _tapIndex) public view validTapIndex(_tapIndex) returns(bool) {
-		bool isWithdrawAccepted = false;
-		// get latest voting for tap
-		uint latestVotingIndex = tapVotings[_tapIndex][tapVotingsCount[_tapIndex].sub(1)];
-		Voting memory voting = votings[latestVotingIndex];
-		bool isVotingAccepted = getVotingResult(latestVotingIndex) == VotingResult.Accept;
-		// if voting is of types: ReleaseTap, ReleaseTapDecreasedQuorum, ChangeRoadmap or ChangeRoadmapDecreasedQuorum then set isWithdrawAccepted to true
-		if(((voting.votingType != VotingType.TerminateProject) && (voting.votingType != VotingType.TerminateProjectDecreasedQuorum)) && isVotingAccepted) {
-			isWithdrawAccepted = true;
-		}
-		return isWithdrawAccepted;
-	}
-
-	/**
-	 * Investor methods
-	 */
-
-	/**
-	 * @dev Creates a new voting by investor. Investors can create votings of 4 types: ChangeRoadmap, ChangeRoadmapDecreasedQuorum, TerminateProject, TerminateProjectDecreasedQuorum.
-	 * @param _tapIndex tap index
-	 * @param _votingType voting type
-	 */
-	function createVotingByInvestor(uint _tapIndex, VotingType _votingType) external onlyInvestor validTapIndex(_tapIndex) {
-		// common validation
-		require(_votingType == VotingType.ChangeRoadmap || _votingType == VotingType.ChangeRoadmapDecreasedQuorum || _votingType == VotingType.TerminateProject || _votingType == VotingType.TerminateProjectDecreasedQuorum);
-		uint latestVotingIndex = tapVotings[_tapIndex][tapVotingsCount[_tapIndex].sub(1)];
-		Voting memory latestVoting = votings[latestVotingIndex];
-		VotingResult votingResult = getVotingResult(latestVotingIndex);
-		// check that last voting is finished
-		require(now >= latestVoting.finishAt);
-
-		// if investor wants to create voting of type ChangeRoadmap
-		if(_votingType == VotingType.ChangeRoadmap) {
-			// check that latest voting is of types ReleaseTap, ReleaseTapDecreasedQuorum, TerminateProject, TerminateProjectDecreasedQuorum
-			require(latestVoting.votingType == VotingType.ReleaseTap || latestVoting.votingType == VotingType.ReleaseTapDecreasedQuorum || latestVoting.votingType == VotingType.TerminateProject || latestVoting.votingType == VotingType.TerminateProjectDecreasedQuorum);
-			// if latest voting is ReleaseTap
-			if(latestVoting.votingType == VotingType.ReleaseTap || latestVoting.votingType == VotingType.ReleaseTapDecreasedQuorum) {
-				// check that latest voting result is no decision
-				require(votingResult == VotingResult.NoDecision);
-			}
-			// if latest voting is TerminateProject
-			if(latestVoting.votingType == VotingType.TerminateProject || latestVoting.votingType == VotingType.TerminateProjectDecreasedQuorum) {
-				// check that latest voting result is decline
-				require(votingResult == VotingResult.Decline);
-			}
-			// create a new voting
-			_createVoting(_tapIndex, minQuorumRate, now + 3 weeks, now + 4 weeks, VotingType.ChangeRoadmap);
-		}
-
-		// if investor wants to create voting of type ChangeRoadmapDecreasedQuorum
-		if(_votingType == VotingType.ChangeRoadmapDecreasedQuorum) {
-			// check that latest voting is of type ChangeRoadmap or ChangeRoadmapDecreasedQuorum
-			require(latestVoting.votingType == VotingType.ChangeRoadmap || latestVoting.votingType == VotingType.ChangeRoadmapDecreasedQuorum);
-			// check that latest voting result has not reached quorum or has no decision
-			require((votingResult == VotingResult.QuorumNotReached) || (votingResult == VotingResult.NoDecision));
-			// create a new voting
-			_createVoting(_tapIndex, 50, now + 3 weeks, now + 4 weeks, VotingType.ChangeRoadmapDecreasedQuorum);
-		}
-
-		// if investor wants to create voting of type TerminateProject
-		if(_votingType == VotingType.TerminateProject) {
-			// check that latest voting is of types: ReleaseTap, ReleaseTapDecreasedQuorum, ChangeRoadmap, ChangeRoadmapDecreasedQuorum
-			require(latestVoting.votingType == VotingType.ReleaseTap || latestVoting.votingType == VotingType.ReleaseTapDecreasedQuorum || latestVoting.votingType == VotingType.ChangeRoadmap || latestVoting.votingType == VotingType.ChangeRoadmapDecreasedQuorum);
-			// check that latest voting result is decline
-			require(votingResult == VotingResult.Decline);
-			// create a new voting
-			_createVoting(_tapIndex, minQuorumRate, now, now + 2 weeks, VotingType.TerminateProject);
-		}
-
-		// if investor wants to create voting of type TerminateProjectDecreasedQuorum
-		if(_votingType == VotingType.TerminateProjectDecreasedQuorum) {
-			// check that latest voting is of type TerminateProject or TerminateProjectDecreasedQuorum
-			require(latestVoting.votingType == VotingType.TerminateProject || latestVoting.votingType == VotingType.TerminateProjectDecreasedQuorum);
-			// check that latest voting result has not reached quorum or has no decision
-			require((votingResult == VotingResult.QuorumNotReached) || (votingResult == VotingResult.NoDecision));
-			// create a new voting
-			_createVoting(_tapIndex, 50, now, now + 2 weeks, VotingType.TerminateProjectDecreasedQuorum);
-		}
-	}
-	
-	/**
-	 * @dev Voting by investor
-	 * @param _votingIndex voting index
-	 * @param _isYes positive/negative decision
-	 */
-	function vote(uint _votingIndex, bool _isYes) external onlyInvestor validVotingIndex(_votingIndex) {
-		// validation
-		require(now >= votings[_votingIndex].createdAt);
-		// require(now < votings[_votingIndex].finishAt);
-		require(votings[_votingIndex].votedByAmount[msg.sender]==0);
-		require(!isProjectTerminated());
-		// vote
-		uint256 senderBalance = projectToken.balanceOf(msg.sender);
-		votings[_votingIndex].votedByAmount[msg.sender] = senderBalance;
-		votings[_votingIndex].voters.push(msg.sender);
-		if(_isYes) {
-			votings[_votingIndex].tokenAmountToAccept = votings[_votingIndex].tokenAmountToAccept.add(senderBalance);
-		} else {
-			votings[_votingIndex].tokenAmountToReject = votings[_votingIndex].tokenAmountToReject.add(senderBalance);
-		}
-	}
-
-	/**
-	 * Evercity member / owner methods
-	 */
-
-	/**
-	 * @dev Creates a new voting by owner. Owner can create votings only of type ReleaseTapDecreasedQuorum
-	 * @param _tapIndex tap index
-	 * @param _votingType voting type
-	 */
-	function createVotingByOwner(uint _tapIndex, VotingType _votingType) external onlyOwner validTapIndex(_tapIndex) {
-		// validation
-		require(
-			_votingType == VotingType.ReleaseTapDecreasedQuorum ||
-			_votingType == VotingType.ReleaseTap
-		);
-		uint latestVotingIndex = tapVotings[_tapIndex][tapVotingsCount[_tapIndex].sub(1)];
-		Voting memory latestVoting = votings[latestVotingIndex];
-		// check that latest voting is finished
-		require(now >= latestVoting.finishAt);
-		// check that latest voting is of type ReleaseTap or ReleaseTapDecreasedQuorum
-		require(latestVoting.votingType == VotingType.ReleaseTap || latestVoting.votingType == VotingType.ReleaseTapDecreasedQuorum);
-		// check that latest voting result is quorum not reached
-		
-		// create a new voting
-		if(_votingType == VotingType.ReleaseTapDecreasedQuorum) {
-			require(getVotingResult(latestVotingIndex) == VotingResult.QuorumNotReached);
-			_createVoting(_tapIndex, 50, now, now + 7 days, VotingType.ReleaseTapDecreasedQuorum);
-		} else {
-			require(getVotingResult(latestVotingIndex) == VotingResult.QuorumNotReached);
-			_createVoting(_tapIndex, 50, now, now + 7 days, VotingType.ReleaseTap);
-		}
-	}
-
-	/**
-	 * @dev Withdraws DAI tokens in case project is terminated
-	 */
-	function withdrawFunding() external onlyOwner {
-		// validation
-		require(isProjectTerminated());
-		// calculate amount of DAI tokens to withdraw
-		uint amountToWithdraw = 0;
-		for(uint i = 0; i < tapsCount; i++) {
-			if(!tapPayments[i].isWithdrawn) {
-				amountToWithdraw = amountToWithdraw.add(tapAmounts[i]);
-			}
-		}
-		// transfer DAI tokens to returnAddress
-		daiToken.transfer(returnAddress, amountToWithdraw);
-	}
-
-	/**
-	 * Project owner methods
-	 */
-
-	/**
-	 * @dev Withdraws tap payment by project owner
-	 * @param _tapIndex tap index
-	 */
-	function withdrawTapPayment(uint _tapIndex) external validTapIndex(_tapIndex) {
-		// validation
-		require(msg.sender == projectOwner);
-		// require(isTapWithdrawAcceptedByInvestors(_tapIndex)); TODO: FIX
-		require(!tapPayments[_tapIndex].isWithdrawn);
-		// create tap payment
-		TapPayment memory tapPayment;
-		tapPayment.amount = tapAmounts[_tapIndex];
-		tapPayment.createdAt = now;
-		tapPayment.isWithdrawn = true;
-		tapPayments[_tapIndex] = tapPayment;
-		// transfer DAI tokens for selected tap to project owner
-		daiToken.transfer(projectOwner, tapAmounts[_tapIndex]);
-	}
-
-	/**
-	 * Internal methods
-	 */
-
-	/**
-	 * @dev Creates a new voting
-	 * @param _tapIndex tap index
-	 * @param _quorumRate quorum rate
-	 * @param _createdAt when voting was created timestamp
-	 * @param _finishAt when voting should be finished timestamp
-	 * @param _votingType voting type
-	 */
-	function _createVoting(uint _tapIndex, uint _quorumRate, uint _createdAt, uint _finishAt, VotingType _votingType) internal validTapIndex(_tapIndex) {
-		// validation
-		require(_quorumRate > 0);
-		require(_createdAt > 0);
-		require(_finishAt > 0);
-		// create a new voting
-		Voting memory voting;
-		voting.tapIndex = _tapIndex;
-		voting.quorumRate = _quorumRate;
-		voting.createdAt = _createdAt;
-		voting.finishAt = _finishAt;
-		voting.votingType = _votingType;
-		votings[votingsCount] = voting;
-		// update contract properties
-		tapVotings[_tapIndex][tapVotingsCount[_tapIndex]] = votingsCount;
-		tapVotingsCount[_tapIndex] = tapVotingsCount[_tapIndex].add(1);
-		votingsCount = votingsCount.add(1);
 	}
 }
