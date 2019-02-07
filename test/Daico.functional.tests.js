@@ -2,6 +2,7 @@ const moment = require("moment");
 
 const Daico = artifacts.require("Daico");
 const MintableToken = artifacts.require("MintableToken");
+const STOContract = artifacts.require("STOContract");
 
 const { increaseTime } = require("./utils/helpers");
 
@@ -17,6 +18,7 @@ contract("Daico functional tests", (accounts) => {
 	const returnFunds = accounts[7];
 	const other = accounts[8];
 
+	let stoContract;
 	let daico;
 	let daiToken;
 	let projectToken;
@@ -86,47 +88,78 @@ contract("Daico functional tests", (accounts) => {
 		return true;
 	}
 
+			// // 1.2. У инвесторов появляются daiToken
+			// await evercityToken.mint(investor1, 100, {from: evercity});
+			// await evercityToken.mint(investor2, 100, {from: evercity});
+			// await evercityToken.mint(investor3, 150, {from: evercity});
+
+
+	// constructor(address _ervercityTokenAddress, address _daicoAddress) public {
+	// 	daicoAddress = _daicoAddress;
+	// 	ervercityTokenAddress = _ervercityTokenAddress;
+	// }
+
+	// function invest(uint _amount, address _investorAddress) public {
+	// 	ERC20(ervercityTokenAddress).transferFrom(msg,sender, address(this), _amount);
+	// 	ERC20(ervercityTokenAddress).approve(daicoAddress, _amount);
+	// 	mint(msg.sender, _amount);
+
+	// 	IDaico(daicoAddress).addInvestor(_amount, _investorAddress);
+	// }
+
+
 	describe("Different scenarios", () => {
-		beforeEach(async() => {
+		beforeEach(async() => {		
 			// 1.1. evercityMember деплоит daiToken
 			evercityToken = await MintableToken.new({from: evercity});
 
-			// 1.2. У инвесторов появляются daiToken
-			await evercityToken.mint(investor1, 100, {from: evercity});
-			await evercityToken.mint(investor2, 100, {from: evercity});
-			await evercityToken.mint(investor3, 150, {from: evercity});
+			stoContract = await STOContract.new(evercityToken.address, {from: projectOwner});
 
-			var owner = projectOwner;
-			var daiToken = evercityToken.address;
 			var returnAddress = evercity;
 			var tapFunds = [100, 100, 100];
 			var tapDurations = [30, 30, 30];
-			daico = await Daico.new(owner, daiToken, returnAddress, tapFunds, tapDurations, {from:projectOwner});
+			daico = await Daico.new(
+				projectOwner, 
+				evercityToken.address, 
+				stoContract.address, 
+				returnAddress, 
+				tapFunds, 
+				tapDurations, {from:projectOwner});
 
-			await evercityToken.approve(daico.address, 100, {from:investor1});
-			await evercityToken.approve(daico.address, 100, {from:investor2});
-			await evercityToken.approve(daico.address, 100, {from:investor3});
+			await stoContract.setDaicoAddress(daico.address, {from:projectOwner});
 
-			await daico.invest(100, {from:investor1});
-			await daico.invest(50, {from:investor2});
-			await daico.invest(50, {from:investor2});
-			await daico.invest(100, {from:investor3});
-			await daico.invest(50, {from:investor3}).should.be.rejectedWith('revert');
+			await evercityToken.mint(investor1, 100, {from:evercity});
+			await evercityToken.mint(investor2, 100, {from:evercity});
+			await evercityToken.mint(investor3, 100, {from:evercity});
+
+			await evercityToken.approve(stoContract.address, 100, {from:investor1});
+			await evercityToken.approve(stoContract.address, 100, {from:investor2});
+			await evercityToken.approve(stoContract.address, 100, {from:investor3});
+
+			// console.log('======= before all:\n', await getTapsInfo(),'\n')
+			await stoContract.invest(100, {from:investor1});
+			await stoContract.invest(50, {from:investor2});
+			await stoContract.invest(50, {from:investor2});
+			await stoContract.invest(100, {from:investor3});
+			console.log('======= after investing:\n', await getTapsInfo(),'\n')
+			await stoContract.invest(50, {from:investor3}).should.be.rejectedWith('revert');
 		});
 
 		it(`1. Сценарий: все голосования происходят вовремя и без задержек, все голоса за`, async() => {
 			await daico.withdrawFundsFromTap(0, {from:projectOwner});
-			await increaseTime(23*days);
 
-			 // Голосование началось
+			await increaseTime(23*days);
+			console.log('======= before 1 voting:\n', await getTapsInfo(),'\n')
 			await daico.vote(true, {from: investor1});
 			await daico.vote(true, {from: investor2});
 			await daico.vote(true, {from: investor3});
 			await increaseTime(7*days); // голосование кончилось
+			console.log('======= after 1 voting:\n', await getTapsInfo(),'\n')
 
 			await daico.withdrawFundsFromTap(1, {from:projectOwner});
 
 			await increaseTime(23*days); // Голосование началось
+
 			await daico.vote(true, {from: investor1});
 			await daico.vote(true, {from: investor2});
 			await daico.vote(true, {from: investor3});
@@ -203,16 +236,16 @@ contract("Daico functional tests", (accounts) => {
 			await evercityToken.mint(investor2, 50, {from: evercity});
 			await evercityToken.mint(investor3, 50, {from: evercity});
 
-			await evercityToken.approve(daico.address, 50, {from:investor1});
-			await evercityToken.approve(daico.address, 50, {from:investor2});
-			await evercityToken.approve(daico.address, 50, {from:investor3});
+			await evercityToken.approve(stoContract.address, 50, {from:investor1});
+			await evercityToken.approve(stoContract.address, 50, {from:investor2});
+			await evercityToken.approve(stoContract.address, 50, {from:investor3});
 
-			await daico.invest(50, {from:investor1});
+			await stoContract.invest(50, {from:investor1});
 			assert.equal((await getTapsInfo()).tapsStages.toString(), [TS.Success, TS.Investing, TS.Preparing, TS.Preparing].toString())
 
-			await daico.invest(50, {from:investor2});
+			await stoContract.invest(50, {from:investor2});
 			assert.equal((await getTapsInfo()).tapsStages.toString(), [TS.Success, TS.Investing, TS.Preparing, TS.Preparing].toString())
-			await daico.invest(50, {from:investor3});
+			await stoContract.invest(50, {from:investor3});
 			await increaseTime(7*days);
 			assert.equal((await getTapsInfo()).tapsStages.toString(), [TS.Success, TS.Success, TS.Preparing, TS.Preparing].toString())
 			
@@ -235,13 +268,3 @@ contract("Daico functional tests", (accounts) => {
 		});
 	});
 });
-
-
-
-
-
-
-
-
-
-

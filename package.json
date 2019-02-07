@@ -30,7 +30,7 @@
 		"growl": "^1.10.0",
 		"moment": "^2.22.2",
 		"solidity-coverage": "^0.5.5",
-		"truffle": "^4.1.8",
+		"truffle": "^4.1.15",
 		"truffle-hdwallet-provider": "0.0.5",
 		"utf8": "^3.0.0",
 		"zeppelin-solidity": "^1.9.0"
