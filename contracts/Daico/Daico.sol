@@ -9,7 +9,9 @@ contract Daico is IDaico {
 
 	event InvestEvent(uint _amount, address _sender, uint _total, uint _tapSum, uint _startedAt);
 	event Vote(uint _amount, address _sender, bool _vote);
-
+	event ReturnTokensToInvestor(address _investor, uint _amount);
+	event FundsWithdrawal(address _owner, uint _amount);
+	event NewRoadmapProposed(uint _fromTap, uint _roadmapNum, uint[] _nextTapFunds, uint[] _nextTapDurations);
 
 	// Voting result
 	enum VR { 
@@ -141,7 +143,13 @@ contract Daico is IDaico {
 			newRoadmapProposed = false;
 		}
 
-		emit InvestEvent(_amount, _investorAddress, _amountOfAllInvestments(curTapNum), _tapAmountsSum(curTapNum), startedAt);
+		emit InvestEvent(
+			_amount, 
+			_investorAddress,
+			_amountOfAllInvestments(curTapNum), 
+			_tapAmountsSum(curTapNum), 
+			startedAt
+		);
 	}
 
 	/**
@@ -161,6 +169,7 @@ contract Daico is IDaico {
 			investor = roadmaps[rmNum].investors[invNum];
 			part = ((investor.invested * remainder) / _amountOfAllInvestments(curTapNum));
 			daiToken.transfer(investor.addr, part);
+			emit ReturnTokensToInvestor(investor.addr, part);
 		}
 	}
 
@@ -179,6 +188,7 @@ contract Daico is IDaico {
 		roadmaps[rmNum].taps[_tapNum].isWithdrawed = true;
 		
 		daiToken.transfer(owner, roadmaps[rmNum].taps[_tapNum].funds);
+		emit FundsWithdrawal(owner, roadmaps[rmNum].taps[_tapNum].funds);
 	}
 
 	/**
@@ -275,6 +285,8 @@ contract Daico is IDaico {
 		for(invNum = 0; invNum < roadmaps[roadmapsCount - 1].investorsCount; invNum++) {
 			roadmaps[roadmapsCount].investors[invNum] = roadmaps[roadmapsCount - 1].investors[invNum];
 		}
+
+		emit NewRoadmapProposed((curTapNum + 1), roadmapsCount, _tapFunds, _tapDurations);
 
 		roadmapsCount += 1;
 		newRoadmapProposed = true;
