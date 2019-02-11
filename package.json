@@ -19,7 +19,6 @@
 	},
 	"homepage": "https://web.thetta.io",
 	"dependencies": {
-		"@thetta/core": "https://github.com/Thetta/Thetta-DAO-Framework.git#genericCaller",
 		"babel-eslint": "^8.2.3",
 		"babel-polyfill": "^6.26.0",
 		"babel-register": "^6.26.0",
@@ -31,7 +30,7 @@
 		"growl": "^1.10.0",
 		"moment": "^2.22.2",
 		"solidity-coverage": "^0.5.5",
-		"truffle": "^4.1.8",
+		"truffle": "^4.1.15",
 		"truffle-hdwallet-provider": "0.0.5",
 		"utf8": "^3.0.0",
 		"zeppelin-solidity": "^1.9.0"
