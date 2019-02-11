@@ -68,12 +68,10 @@ contract("Daico functional tests", (accounts) => {
 	async function getTapsInfo() {
 		var data = await daico.getTapsInfo()
 		data[1] = data[1].map((t)=> new web3.BigNumber(t).toNumber())
-		// data[3] = data[3].map((t)=> new web3.BigNumber(t).toNumber())
 		return {
 			currentTap: new web3.BigNumber(data[0]).toNumber(),
 			tapsStages: data[1],
 			currentVoting: new web3.BigNumber(data[2]).toNumber()
-			// tapOuts: data[3]
 
 		}
 	}
@@ -81,36 +79,14 @@ contract("Daico functional tests", (accounts) => {
 	function isArrayEquals(arr1, arr2) {
 		for(var i = 0; i < arr1.length; i++) {
 			if(arr1[i] != arr2[i]) {
-				console.log('Unequal:', arr1, arr2);
 				return false;
 			}
 		}
 		return true;
 	}
 
-			// // 1.2. У инвесторов появляются daiToken
-			// await evercityToken.mint(investor1, 100, {from: evercity});
-			// await evercityToken.mint(investor2, 100, {from: evercity});
-			// await evercityToken.mint(investor3, 150, {from: evercity});
-
-
-	// constructor(address _ervercityTokenAddress, address _daicoAddress) public {
-	// 	daicoAddress = _daicoAddress;
-	// 	ervercityTokenAddress = _ervercityTokenAddress;
-	// }
-
-	// function invest(uint _amount, address _investorAddress) public {
-	// 	ERC20(ervercityTokenAddress).transferFrom(msg,sender, address(this), _amount);
-	// 	ERC20(ervercityTokenAddress).approve(daicoAddress, _amount);
-	// 	mint(msg.sender, _amount);
-
-	// 	IDaico(daicoAddress).addInvestor(_amount, _investorAddress);
-	// }
-
-
 	describe("Different scenarios", () => {
 		beforeEach(async() => {		
-			// 1.1. evercityMember деплоит daiToken
 			evercityToken = await MintableToken.new({from: evercity});
 
 			stoContract = await STOContract.new(evercityToken.address, {from: projectOwner});
@@ -136,28 +112,24 @@ contract("Daico functional tests", (accounts) => {
 			await evercityToken.approve(stoContract.address, 100, {from:investor2});
 			await evercityToken.approve(stoContract.address, 100, {from:investor3});
 
-			// console.log('======= before all:\n', await getTapsInfo(),'\n')
 			await stoContract.invest(100, {from:investor1});
 			await stoContract.invest(50, {from:investor2});
 			await stoContract.invest(50, {from:investor2});
 			await stoContract.invest(100, {from:investor3});
-			console.log('======= after investing:\n', await getTapsInfo(),'\n')
 			await stoContract.invest(50, {from:investor3}).should.be.rejectedWith('revert');
 		});
 
 		it(`1. Сценарий: все голосования происходят вовремя и без задержек, все голоса за`, async() => {
 			await daico.withdrawFundsFromTap(0, {from:projectOwner});
-
+			assert.equal(new web3.BigNumber(await evercityToken.balanceOf(projectOwner)).toNumber(), 100);
 			await increaseTime(23*days);
-			console.log('======= before 1 voting:\n', await getTapsInfo(),'\n')
 			await daico.vote(true, {from: investor1});
 			await daico.vote(true, {from: investor2});
 			await daico.vote(true, {from: investor3});
 			await increaseTime(7*days); // голосование кончилось
-			console.log('======= after 1 voting:\n', await getTapsInfo(),'\n')
 
 			await daico.withdrawFundsFromTap(1, {from:projectOwner});
-
+			assert.equal(new web3.BigNumber(await evercityToken.balanceOf(projectOwner)).toNumber(), 200);
 			await increaseTime(23*days); // Голосование началось
 
 			await daico.vote(true, {from: investor1});
@@ -166,6 +138,7 @@ contract("Daico functional tests", (accounts) => {
 			await increaseTime(7*days); // голосование кончилось
 
 			await daico.withdrawFundsFromTap(2, {from:projectOwner});
+			assert.equal(new web3.BigNumber(await evercityToken.balanceOf(projectOwner)).toNumber(), 300);
 		});
 
 		it(`2. Сценарий: задержки при голосовании. в первом голосует 66/70%, во втором (пониженный кворум) – 33/50%. 
@@ -181,6 +154,7 @@ contract("Daico functional tests", (accounts) => {
 			await daico.vote(true, {from: investor1});
 			await increaseTime(7*days);
 			assert.isTrue(isArrayEquals((await getTapsInfo()).tapsStages, [TS.Success, TS.Terminated, TS.Preparing]));
+			assert.equal(new web3.BigNumber(await evercityToken.balanceOf(projectOwner)).toNumber(), 0);
 		});
 
 		it(`3. Сценарий: задержки при голосовании. в первом голосует 66/70%, во втором (пониженный кворум) – 66/50%. 
@@ -206,9 +180,13 @@ contract("Daico functional tests", (accounts) => {
 			await daico.vote(true, {from: investor2});
 			await increaseTime(7*days);
 			assert.isTrue(isArrayEquals((await getTapsInfo()).tapsStages, [TS.Success, TS.Success, TS.Success]));
+			await daico.withdrawFundsFromTap(0, {from:projectOwner});
+			await daico.withdrawFundsFromTap(1, {from:projectOwner});
+			await daico.withdrawFundsFromTap(2, {from:projectOwner});
+			assert.equal(new web3.BigNumber(await evercityToken.balanceOf(projectOwner)).toNumber(), 300);
 		});
 
-		it(`4. Сценарий: отсутствия консенсуса. во втором голосовании один против, 
+		it(`4. Сценарий: отсутствие консенсуса. во втором голосовании один против, 
 			заменяется roadmap (вместо последнего периода [100], [30] предлагается два периода [50, 150], [50, 50]), 
 			его утверждают, привлекаются новые инвестиции`, async() => {
 			// Есть некоторые особенности в реализации proposeNewRoadmap:
@@ -217,6 +195,7 @@ contract("Daico functional tests", (accounts) => {
 			// 3. Новый roadmap должен требовать больше денег, чем предыдущий
 			// 4. Должно быть больше или столько же stage
 			await daico.withdrawFundsFromTap(0, {from:projectOwner});
+			assert.equal(new web3.BigNumber(await evercityToken.balanceOf(projectOwner)).toNumber(), 100);
 			await increaseTime(23*days); // Голосование началось		 
 			await daico.vote(true, {from: investor1});
 			await daico.vote(true, {from: investor2});
@@ -248,15 +227,19 @@ contract("Daico functional tests", (accounts) => {
 			await stoContract.invest(50, {from:investor3});
 			await increaseTime(7*days);
 			assert.equal((await getTapsInfo()).tapsStages.toString(), [TS.Success, TS.Success, TS.Preparing, TS.Preparing].toString())
-			
+			await daico.withdrawFundsFromTap(1, {from:projectOwner});
+			assert.equal(new web3.BigNumber(await evercityToken.balanceOf(projectOwner)).toNumber(), 200);
+
 			await increaseTime(43*days); // Голосование началось
 			assert.equal((await getTapsInfo()).tapsStages.toString(), [TS.Success, TS.Success, TS.Voting, TS.Preparing].toString())
 			await daico.vote(true, {from: investor1});
 			await daico.vote(true, {from: investor2});
 			await daico.vote(true, {from: investor3});
 			await increaseTime(7*days);
-			assert.equal((await getTapsInfo()).tapsStages.toString(), [TS.Success, TS.Success, TS.Success, TS.Preparing].toString())
 			await daico.withdrawFundsFromTap(2, {from:projectOwner});
+			assert.equal(new web3.BigNumber(await evercityToken.balanceOf(projectOwner)).toNumber(), 300);
+
+			assert.equal((await getTapsInfo()).tapsStages.toString(), [TS.Success, TS.Success, TS.Success, TS.Preparing].toString())
 			await increaseTime(43*days); // Голосование началось
 			assert.equal((await getTapsInfo()).tapsStages.toString(), [TS.Success, TS.Success, TS.Success, TS.Voting].toString())
 			await daico.vote(true, {from: investor1});
@@ -265,6 +248,7 @@ contract("Daico functional tests", (accounts) => {
 			await increaseTime(7*days);
 			assert.equal((await getTapsInfo()).tapsStages.toString(), [TS.Success, TS.Success, TS.Success, TS.Success].toString())
 			await daico.withdrawFundsFromTap(3, {from:projectOwner});
+			assert.equal(new web3.BigNumber(await evercityToken.balanceOf(projectOwner)).toNumber(), 450);
 		});
 	});
 });

@@ -74,8 +74,16 @@ contract Daico is IDaico {
 		uint pro;
 		uint versus;
 		address[] voted;
-	}	
+	}
 
+	/**
+	* @param _owner owner address
+	* @param _daiToken evercity token address
+	* @param _STOContractAddress address of the project token
+	* @param _returnAddress address to return tokens if project fails
+	* @param _tapFunds array of tap amount to invest
+	* @param _tapDurations array of tap durations
+	*/
 	constructor(
 		address _owner, 
 		address _daiToken,
@@ -104,37 +112,32 @@ contract Daico is IDaico {
 		roadmapsCount += 1;
 	}
 
-	function getCurrentTapNum() internal view returns(uint) {
+	/**
+	* @dev this function will replace current roadmap to the proposed one if it was accepted
+		  this function will be called at the first investment operation for a new roadmap
+	*/		
+	function _replaceRoadmapToProposedOne() internal {
 		(uint curTapNum, TapStage[] memory tapStages, uint v) = getTapsInfo();
-		return curTapNum;
-	}
-
-	function getMaximalTapsLength() internal view returns(uint maximal) {
-		for(uint rmNum = 0; rmNum < roadmapsCount; rmNum++) {
-			if(roadmaps[rmNum].tapsCount > maximal) {
-				maximal = roadmaps[rmNum].tapsCount;
-			}
-		}
-	}		
-	
-	function replaceRoadmapToProposedOne() internal {
-		uint curTapNum = getCurrentTapNum();
 		for(uint tapNum = 0; tapNum < roadmaps[roadmapsCount - 1].tapsCount; tapNum++) {
 			if(tapNum > curTapNum)  tapToRId[tapNum] = roadmapsCount - 1;
 		}
 	}
 
+	/**
+	* @dev interface for the STOContract to add an investor
+	* @param _amount – token amount, that investor going to invest
+	* @param _investorAddress – address of an investor
+	*/		
 	function addInvestor(uint _amount, address _investorAddress) public {
 		require(STOContractAddress == msg.sender);
 		(uint curTapNum, TapStage[] memory tapStages, uint votNum) = getTapsInfo();
 		require(tapStages[curTapNum] == TapStage.Investing);
 		require(_amount > 0);
 		
-
-		if(newRoadmapProposed) replaceRoadmapToProposedOne(); curTapNum += 1;
+		if(newRoadmapProposed) _replaceRoadmapToProposedOne(); curTapNum += 1;
 
 		uint rmNum = tapToRId[curTapNum];
-		uint invId = getInvestorId(_investorAddress);
+		uint invId = _getInvestorId(_investorAddress);
 
 		require(amountOfAllInvestments(curTapNum) + _amount <= tapAmountsSum(curTapNum));
 		daiToken.transferFrom(STOContractAddress, address(this), _amount);
@@ -157,10 +160,19 @@ contract Daico is IDaico {
 		emit InvestEvent(_amount, _investorAddress, amountOfAllInvestments(curTapNum), tapAmountsSum(curTapNum), startedAt);
 	}
 
+	/**
+	* @param _tapNum – number of a tap
+	* @return are all funds for a this _tapNum collected or not
+	*/		
 	function areAllFundsCollected(uint _tapNum) internal view returns(bool) {
 		return amountOfAllInvestments(_tapNum) >= tapAmountsSum(_tapNum);
 	}
 
+	/**
+	* @dev sum can vary for a different _tapNum in cases when roadmap have been changed
+	* @param _tapNum – number of a tap
+	* @return sum – sum of all gotten investments for a specific tap
+	*/		
 	function amountOfAllInvestments(uint _tapNum) public view returns(uint sum) {
 		uint rmNum = tapToRId[_tapNum];
 		uint invCount = roadmaps[rmNum].investorsCount;
@@ -169,6 +181,11 @@ contract Daico is IDaico {
 		}
 	}
 
+	/**
+	* @dev sum of all tap amounts; output can vary for a different _tapNum in cases when roadmap have been changed
+	* @param _tapNum – number of the tap (to get an appropriate roadmap)
+	* @return sum – sum of tap amounts
+	*/		
 	function tapAmountsSum(uint _tapNum) public view returns(uint sum) {
 		uint rmNum = tapToRId[_tapNum];
 		uint tapsCount = roadmaps[rmNum].tapsCount;
@@ -177,6 +194,10 @@ contract Daico is IDaico {
 		}
 	}
 
+	/**
+	* @dev withdrawal interface for the investors; works in a cases when project fails
+	* @dev returns all tokens to the investors that was not spent yet
+	*/		
 	function returnTokens() external {
 		(uint curTapNum, TapStage[] memory tapStages, uint votNum) = getTapsInfo();
 		uint rmNum = tapToRId[curTapNum];
@@ -193,29 +214,37 @@ contract Daico is IDaico {
 		}
 	}
 
-	// Функция для снятия средств owner'ом.
+	/**
+	* @dev withdrawal interface for the project owner
+	* @param _tapNum – number of tap to withdraw from
+	*/		
 	function withdrawFundsFromTap(uint _tapNum) external {
 		require(msg.sender == owner);
 
 		(uint curTapNum, TapStage[] memory tapStages, uint votNum) = getTapsInfo();
-		require(tapStages[_tapNum] == TapStage.Success);
-
-		roadmaps[tapToRId[curTapNum]].taps[_tapNum].isWithdrawed = true;
+		uint rmNum = tapToRId[_tapNum];
 		
-		daiToken.transfer(owner, getTap(_tapNum).funds);
+		require(tapStages[_tapNum] == TapStage.Success);
+		
+		roadmaps[rmNum].taps[_tapNum].isWithdrawed = true;
+		
+		daiToken.transfer(owner, roadmaps[rmNum].taps[_tapNum].funds);
 	}
 
-	// Функция для голосования.
+	/**
+	* @dev voting interface for investors
+	* @param _vote – pro or versus
+	*/		
 	function vote(bool _vote) external {
 		(uint curTapNum, TapStage[] memory tapStages, uint votNum) = getTapsInfo();
 		uint rmNum = tapToRId[curTapNum];
-		uint invId = getInvestorId(msg.sender);
+		uint invId = _getInvestorId(msg.sender);
 		require(invId < roadmaps[rmNum].investorsCount); // is investor
 		require(tapStages[curTapNum] == TapStage.Voting 
 			|| tapStages[curTapNum] == TapStage.VotingDQ 
 			|| tapStages[curTapNum] == TapStage.RoadmapVoting 
 			|| tapStages[curTapNum] == TapStage.RoadmapVotingDQ);
-		require(!isVoted(getVoting(curTapNum, votNum).voted, msg.sender));
+		require(!isVoted(curTapNum, votNum, msg.sender));
 
 		Investor memory investor = roadmaps[rmNum].investors[invId];		
 		
@@ -226,35 +255,65 @@ contract Daico is IDaico {
 		emit Vote(investor.invested, msg.sender, _vote);	
 	}
 
-	function getInvestorId(address _address) internal view returns(uint) {
-		uint currTapNum = getCurrentTapNum();
-		uint rmNum = tapToRId[currTapNum];
+	/**
+	* @param _targetAddress – address of the investor (presumably)
+	* @return investor id
+	*/		
+	function _getInvestorId(address _targetAddress) internal view returns(uint) {
+		(uint curTapNum, TapStage[] memory tapStages, uint v) = getTapsInfo();
+		uint rmNum = tapToRId[curTapNum];
 		for(uint invNum = 0; invNum < roadmaps[rmNum].investorsCount; invNum++) {
-			if(roadmaps[rmNum].investors[invNum].addr == _address)	 return invNum;
+			if(roadmaps[rmNum].investors[invNum].addr == _targetAddress) return invNum;
 		}
 		return roadmaps[rmNum].investorsCount;
 	}
 
-	function isVoted(address[] memory _voted, address _address) public view returns(bool isVoted) {
-		for(uint voterNum = 0; voterNum < _voted.length; voterNum++) {
-			if(_voted[voterNum] == _address) isVoted = true;
+	/**
+	* @dev
+	* @param _tapNum – number of the tap
+	* @param _votNum – number of the voting	
+	* @param _voterAddress – address of the voter (presumably)
+	* @return is voted or not
+	*/		
+	function isVoted(uint _tapNum, uint _votNum, address _voterAddress) public view returns(bool isVoted) {
+		uint rmNum = tapToRId[_tapNum];
+		Voting memory voting = roadmaps[rmNum].taps[_tapNum].votings[_votNum];
+	
+		for(uint voterNum = 0; voterNum < voting.voted.length; voterNum++) {
+			if(voting.voted[voterNum] == _voterAddress) isVoted = true;
 		}
 	}
 
-	function getTap(uint _tapNum) internal view returns(Tap) {
+	/**
+	* @dev – returns tap 
+	* @param _tapNum – number of the tap to return
+	* @return Tap
+	*/		
+	function _getTap(uint _tapNum) internal view returns(Tap) {
 		uint rmNum = tapToRId[_tapNum];
 		return roadmaps[rmNum].taps[_tapNum];		
 	}
 
+	/**
+	* @return current_tap – number of the current tap
+	* @return tapStages array – array of a states for all tap stages
+	* @return current voting num – number of the current voting
+	*/		
 	function getTapsInfo() public view returns(uint, TapStage[], uint) { // curren_tap, tapstages, current_voting
-		uint max = getMaximalTapsLength();
-		TapStage[] memory tapStages = new TapStage[](max);
+		uint maximalTapsAmount = 0;
+		for(uint rmNum = 0; rmNum < roadmapsCount; rmNum++) {
+			if(roadmaps[rmNum].tapsCount > maximalTapsAmount) {
+				maximalTapsAmount = roadmaps[rmNum].tapsCount;
+			}
+		}		
+
+		TapStage[] memory tapStages = new TapStage[](maximalTapsAmount);
 		uint start = 0;
 		uint tapD;
 		uint votNum = 0;
 
-		for(uint tapNum = 0; tapNum < max; tapNum++) {
-			tapD = getTap(tapNum).duration;
+		for(uint tapNum = 0; tapNum < maximalTapsAmount; tapNum++) {
+			tapD = _getTap(tapNum).duration;
 			(votNum, tapStages[tapNum], start) = getTapStage(tapNum, tapD, start);
 			if((tapStages[tapNum]!=TapStage.Success)) return (tapNum, tapStages, votNum);
 		}
@@ -262,7 +321,14 @@ contract Daico is IDaico {
 		return (tapNum, tapStages, votNum);
 	}
 
-	//													               votingnum, tapstage, NewstartTime
+	/**
+	* @param _tapNum – number of the tap
+	* @param _tapD – tap duration
+	* @param _start – start time of the current tap
+	* @return current voting num – number of the current voting
+	* @return tapStage – state of the current tap
+	* @return NewstartTime – start time of the next tap
+	*/		
 	function getTapStage(uint _tapNum, uint _tapD, uint _start) public view returns(uint, TapStage, uint) {
 		bool invC = areAllFundsCollected(_tapNum);
 		uint RmV = _start + _tapD + roadmapD + votesD;
@@ -274,54 +340,61 @@ contract Daico is IDaico {
 		
 		//          _tapNum  _start time                 duration     voting1      voting2      voting3      voting4   
 		//---------------------------------------------------------------------------------------------------------- 
-		if(thisCase(_tapNum, _start,                    _tapD-votesD,VR.NoResult, VR.NoResult, VR.NoResult, VR.NoResult))            return (0, TapStage.Preparing, 0);
-		if(thisCase(_tapNum, _start+_tapD-votesD,       votesD,      VR.NoResult, VR.NoResult, VR.NoResult, VR.NoResult))            return (0, TapStage.Voting, 0);
-		if(thisCase(_tapNum, investD,                   infinity,    VR.Decline,  VR.NoResult, VR.NoResult, VR.NoResult))            return (0, TapStage.Terminated, 0);
-		if(thisCase(_tapNum, investD,                   infinity,    VR.Success,  VR.NoResult, VR.NoResult, VR.NoResult))            return (0, TapStage.Success, _start + _tapD);
-		if(thisCase(_tapNum, _start+_tapD,              addVotesD,   VR.NoResult, VR.NoResult, VR.NoResult, VR.NoResult))            return (1, TapStage.VotingDQ, 0);
-		if(thisCase(_tapNum, _start+_tapD,              infinity,    VR.NoResult, VR.NoResult, VR.NoResult, VR.NoResult))            return (0, TapStage.Terminated, 0);
-		if(thisCase(_tapNum, _start+_tapD,              infinity,    VR.NoResult, VR.Decline,  VR.NoResult, VR.NoResult))            return (0, TapStage.Terminated, 0);
-		if(thisCase(_tapNum, _start+_tapD,              infinity,    VR.NoResult, VR.Success,  VR.NoResult, VR.NoResult))            return (0, TapStage.Success, _start + _tapD + addVotesD);
-		if(thisCase(_tapNum, _start+_tapD+addVotesD,    roadmapD,    VR.NoResult, VR.NoCons,   VR.NoResult, VR.NoResult))            return (0, TapStage.RoadmapPreparing, 0);
-		if(thisCase(_tapNum, addVRmV-votesD,            votesD,      VR.NoResult, VR.NoCons,   VR.NoResult, VR.NoResult))            return (2, TapStage.RoadmapVoting, 0);
-		if(thisCase(_tapNum, addVRmV,                   investD,     VR.NoResult, VR.NoCons,   VR.Success,  VR.NoResult))            return (0, TapStage.Investing, 0);
-		if(thisCase(_tapNum, addVRmV,                   infinity,    VR.NoResult, VR.NoCons,   VR.Success,  VR.NoResult) && invC)    return (0, TapStage.Success, addVRmV + investD);
-		if(thisCase(_tapNum, addVRmV,                   infinity,    VR.NoResult, VR.NoCons,   VR.Success,  VR.NoResult) && !invC)   return (0, TapStage.Terminated, 0);
-		if(thisCase(_tapNum, _start+_tapD+addVotesD,    infinity,    VR.NoResult, VR.NoCons,   VR.NoCons,   VR.NoResult))            return (0, TapStage.Terminated, 0);
-		if(thisCase(_tapNum, _start+_tapD+addVotesD,    infinity,    VR.NoResult, VR.NoCons,   VR.Decline,  VR.NoResult))            return (0, TapStage.Terminated, 0);
-		if(thisCase(_tapNum, addVRmV,                   addVotesD,   VR.NoResult, VR.NoCons,   VR.NoResult, VR.NoResult))            return (3, TapStage.RoadmapVotingDQ, 0);
-		if(thisCase(_tapNum, addVRmV+addVotesD,         investD,     VR.NoResult, VR.NoCons,   VR.NoResult, VR.Success ))            return (0, TapStage.Investing, 0);
-		if(thisCase(_tapNum, addVRmV+investD,           infinity,    VR.NoResult, VR.NoCons,   VR.NoResult, VR.NoResult ))           return (0, TapStage.Terminated, 0);
-		if(thisCase(_tapNum, addVRmV+investD,           infinity,    VR.NoResult, VR.NoCons,   VR.NoResult, VR.NoCons  ))            return (0, TapStage.Terminated, 0);
-		if(thisCase(_tapNum, addVRmV+investD,           infinity,    VR.NoResult, VR.NoCons,   VR.NoResult, VR.Decline ))            return (0, TapStage.Terminated, 0);
-		if(thisCase(_tapNum, addVRmV+addVotesD,         infinity,    VR.NoResult, VR.NoCons,   VR.NoResult, VR.Success ) && invC)    return (0, TapStage.Success, addVRmV + addVotesD + investD);
-		if(thisCase(_tapNum, addVRmV+addVotesD,         infinity,    VR.NoResult, VR.NoCons,   VR.NoResult, VR.Success ) && !invC)   return (0, TapStage.Terminated, 0);
-		if(thisCase(_tapNum, _start+_tapD,              roadmapD,    VR.NoCons,   VR.NoResult, VR.NoResult, VR.NoResult))            return (0, TapStage.RoadmapPreparing, 0);
-		if(thisCase(_tapNum, _start+_tapD+roadmapD,     votesD,      VR.NoCons,   VR.NoResult, VR.NoResult, VR.NoResult))            return (1, TapStage.RoadmapVoting, 0);
-		if(thisCase(_tapNum, addVRmV+addVotesD+investD, infinity,    VR.NoCons,   VR.Decline,  VR.NoResult, VR.NoResult))            return (0, TapStage.Terminated, 0);
-		if(thisCase(_tapNum, addVRmV+addVotesD+investD, infinity,    VR.NoCons,   VR.NoCons,   VR.NoResult, VR.NoResult))            return (0, TapStage.Terminated, 0);
-		if(thisCase(_tapNum, RmV,                       investD,     VR.NoCons,   VR.Success,  VR.NoResult, VR.NoResult))            return (0, TapStage.Investing, 0);
-		if(thisCase(_tapNum, RmV,                       infinity,    VR.NoCons,   VR.Success,  VR.NoResult, VR.NoResult) && invC)    return (0, TapStage.Success, RmV + investD);
-		if(thisCase(_tapNum, RmV,                       infinity,    VR.NoCons,   VR.Success,  VR.NoResult, VR.NoResult) && !invC)   return (0, TapStage.Terminated, 0);
-		if(thisCase(_tapNum, RmV,                       addVotesD,   VR.NoCons,   VR.NoResult, VR.NoResult, VR.NoResult))            return (2, TapStage.RoadmapVotingDQ, 0);
-		if(thisCase(_tapNum, RmV+addVotesD,             investD,     VR.NoCons,   VR.NoResult, VR.Success,  VR.NoResult))            return (0, TapStage.Investing, 0);
-		if(thisCase(_tapNum, RmV+investD,               infinity,    VR.NoCons,   VR.NoResult, VR.NoResult, VR.NoResult))            return (0, TapStage.Terminated, 0);
-		if(thisCase(_tapNum, RmV+investD,               infinity,    VR.NoCons,   VR.NoResult, VR.Decline,  VR.NoResult))            return (0, TapStage.Terminated, 0);
-		if(thisCase(_tapNum, RmV+investD,               infinity,    VR.NoCons,   VR.NoResult, VR.NoCons,   VR.NoResult))            return (0, TapStage.Terminated, 0);
-		if(thisCase(_tapNum, RmV+addVotesD,             infinity,    VR.NoCons,   VR.NoCons,   VR.Success,  VR.NoResult) && invC)    return (0, TapStage.Success, addVRmV + addVotesD + investD);
-		if(thisCase(_tapNum, RmV+addVotesD,             infinity,    VR.NoCons,   VR.NoCons,   VR.Success,  VR.NoResult) && !invC)   return (0, TapStage.Terminated, 0);
+		if(at(_start,                    _tapD-votesD) &&thisCase(_tapNum, VR.NoResult, VR.NoResult, VR.NoResult, VR.NoResult))            return (0, TapStage.Preparing, 0);
+		if(at(_start+_tapD-votesD,       votesD)   &&    thisCase(_tapNum, VR.NoResult, VR.NoResult, VR.NoResult, VR.NoResult))            return (0, TapStage.Voting, 0);
+		if(at(investD,                   infinity) &&    thisCase(_tapNum, VR.Decline,  VR.NoResult, VR.NoResult, VR.NoResult))            return (0, TapStage.Terminated, 0);
+		if(at(investD,                   infinity) &&    thisCase(_tapNum, VR.Success,  VR.NoResult, VR.NoResult, VR.NoResult))            return (0, TapStage.Success, _start + _tapD);
+		if(at(_start+_tapD,              addVotesD)&&    thisCase(_tapNum, VR.NoResult, VR.NoResult, VR.NoResult, VR.NoResult))            return (1, TapStage.VotingDQ, 0);
+		if(at(_start+_tapD,              infinity) &&    thisCase(_tapNum, VR.NoResult, VR.NoResult, VR.NoResult, VR.NoResult))            return (0, TapStage.Terminated, 0);
+		if(at(_start+_tapD,              infinity) &&    thisCase(_tapNum, VR.NoResult, VR.Decline,  VR.NoResult, VR.NoResult))            return (0, TapStage.Terminated, 0);
+		if(at(_start+_tapD,              infinity) &&    thisCase(_tapNum, VR.NoResult, VR.Success,  VR.NoResult, VR.NoResult))            return (0, TapStage.Success, _start + _tapD + addVotesD);
+		if(at(_start+_tapD+addVotesD,    roadmapD) &&    thisCase(_tapNum, VR.NoResult, VR.NoCons,   VR.NoResult, VR.NoResult))            return (0, TapStage.RoadmapPreparing, 0);
+		if(at(addVRmV-votesD,            votesD)   &&    thisCase(_tapNum, VR.NoResult, VR.NoCons,   VR.NoResult, VR.NoResult))            return (2, TapStage.RoadmapVoting, 0);
+		if(at(addVRmV,                   investD)  &&    thisCase(_tapNum, VR.NoResult, VR.NoCons,   VR.Success,  VR.NoResult))            return (0, TapStage.Investing, 0);
+		if(at(addVRmV,                   infinity) &&    thisCase(_tapNum, VR.NoResult, VR.NoCons,   VR.Success,  VR.NoResult) && invC)    return (0, TapStage.Success, addVRmV + investD);
+		if(at(addVRmV,                   infinity) &&    thisCase(_tapNum, VR.NoResult, VR.NoCons,   VR.Success,  VR.NoResult) && !invC)   return (0, TapStage.Terminated, 0);
+		if(at(_start+_tapD+addVotesD,    infinity) &&    thisCase(_tapNum, VR.NoResult, VR.NoCons,   VR.NoCons,   VR.NoResult))            return (0, TapStage.Terminated, 0);
+		if(at(_start+_tapD+addVotesD,    infinity) &&    thisCase(_tapNum, VR.NoResult, VR.NoCons,   VR.Decline,  VR.NoResult))            return (0, TapStage.Terminated, 0);
+		if(at(addVRmV,                   addVotesD)&&    thisCase(_tapNum, VR.NoResult, VR.NoCons,   VR.NoResult, VR.NoResult))            return (3, TapStage.RoadmapVotingDQ, 0);
+		if(at(addVRmV+addVotesD,         investD)  &&    thisCase(_tapNum, VR.NoResult, VR.NoCons,   VR.NoResult, VR.Success ))            return (0, TapStage.Investing, 0);
+		if(at(addVRmV+investD,           infinity) &&    thisCase(_tapNum, VR.NoResult, VR.NoCons,   VR.NoResult, VR.NoResult ))           return (0, TapStage.Terminated, 0);
+		if(at(addVRmV+investD,           infinity) &&    thisCase(_tapNum, VR.NoResult, VR.NoCons,   VR.NoResult, VR.NoCons  ))            return (0, TapStage.Terminated, 0);
+		if(at(addVRmV+investD,           infinity) &&    thisCase(_tapNum, VR.NoResult, VR.NoCons,   VR.NoResult, VR.Decline ))            return (0, TapStage.Terminated, 0);
+		if(at(addVRmV+addVotesD,         infinity) &&    thisCase(_tapNum, VR.NoResult, VR.NoCons,   VR.NoResult, VR.Success ) && invC)    return (0, TapStage.Success, addVRmV + addVotesD + investD);
+		if(at(addVRmV+addVotesD,         infinity) &&    thisCase(_tapNum, VR.NoResult, VR.NoCons,   VR.NoResult, VR.Success ) && !invC)   return (0, TapStage.Terminated, 0);
+		if(at(_start+_tapD,              roadmapD) &&    thisCase(_tapNum, VR.NoCons,   VR.NoResult, VR.NoResult, VR.NoResult))            return (0, TapStage.RoadmapPreparing, 0);
+		if(at(_start+_tapD+roadmapD,     votesD)   &&    thisCase(_tapNum, VR.NoCons,   VR.NoResult, VR.NoResult, VR.NoResult))            return (1, TapStage.RoadmapVoting, 0);
+		if(at(addVRmV+addVotesD+investD, infinity) &&    thisCase(_tapNum, VR.NoCons,   VR.Decline,  VR.NoResult, VR.NoResult))            return (0, TapStage.Terminated, 0);
+		if(at(addVRmV+addVotesD+investD, infinity) &&    thisCase(_tapNum, VR.NoCons,   VR.NoCons,   VR.NoResult, VR.NoResult))            return (0, TapStage.Terminated, 0);
+		if(at(RmV,                       investD)  &&    thisCase(_tapNum, VR.NoCons,   VR.Success,  VR.NoResult, VR.NoResult))            return (0, TapStage.Investing, 0);
+		if(at(RmV,                       infinity) &&    thisCase(_tapNum, VR.NoCons,   VR.Success,  VR.NoResult, VR.NoResult) && invC)    return (0, TapStage.Success, RmV + investD);
+		if(at(RmV,                       infinity) &&    thisCase(_tapNum, VR.NoCons,   VR.Success,  VR.NoResult, VR.NoResult) && !invC)   return (0, TapStage.Terminated, 0);
+		if(at(RmV,                       addVotesD)&&    thisCase(_tapNum, VR.NoCons,   VR.NoResult, VR.NoResult, VR.NoResult))            return (2, TapStage.RoadmapVotingDQ, 0);
+		if(at(RmV+addVotesD,             investD)  &&    thisCase(_tapNum, VR.NoCons,   VR.NoResult, VR.Success,  VR.NoResult))            return (0, TapStage.Investing, 0);
+		if(at(RmV+investD,               infinity) &&    thisCase(_tapNum, VR.NoCons,   VR.NoResult, VR.NoResult, VR.NoResult))            return (0, TapStage.Terminated, 0);
+		if(at(RmV+investD,               infinity) &&    thisCase(_tapNum, VR.NoCons,   VR.NoResult, VR.Decline,  VR.NoResult))            return (0, TapStage.Terminated, 0);
+		if(at(RmV+investD,               infinity) &&    thisCase(_tapNum, VR.NoCons,   VR.NoResult, VR.NoCons,   VR.NoResult))            return (0, TapStage.Terminated, 0);
+		if(at(RmV+addVotesD,             infinity) &&    thisCase(_tapNum, VR.NoCons,   VR.NoCons,   VR.Success,  VR.NoResult) && invC)    return (0, TapStage.Success, addVRmV + addVotesD + investD);
+		if(at(RmV+addVotesD,             infinity) &&    thisCase(_tapNum, VR.NoCons,   VR.NoCons,   VR.Success,  VR.NoResult) && !invC)   return (0, TapStage.Terminated, 0);
 		//----------------------------------------------------------------------------------------------------------		
 		return (0, TapStage.Preparing, 0);
 	}
 
-	function thisCase(uint _tapNum, uint _from, uint _duration, 
+	/**
+	* @dev check that all voting results are the same
+	* @param _tapNum – number of the tap
+	* @param _votingRes1 – voting result for a 1 voting in the current tap
+	* @param _votingRes2 – voting result for a 2 voting in the current tap
+	* @param _votingRes3 – voting result for a 3 voting in the current tap
+	* @param _votingRes4 – voting result for a 4 voting in the current tap
+	* @return are all voting results the same
+	*/		
+	function thisCase(uint _tapNum,
 		VR _votingRes1, 
 		VR _votingRes2, 
 		VR _votingRes3, 
 		VR _votingRes4) public view returns(bool)
 	{
-		if(!at(_from, _duration)) return false;
-
 		bool withLessQuorum = false;
 		if(_votingRes1 != votingState(_tapNum, 0, withLessQuorum)) return false;
 		withLessQuorum = (_votingRes1 == VR.NoResult);
@@ -337,6 +410,11 @@ contract Daico is IDaico {
 		return true;
 	}
 
+	/**
+	* @dev project owner can propose new roadmap in the case case if consensus wasn't reached
+	* @param _tapFunds – array of amounts to invest for an each tap
+	* @return _tapDurations – array of durations for an each tap
+	*/		
 	function proposeNewRoadmap(uint[] _tapFunds, uint[] _tapDurations) external {
 		(uint curTapNum, TapStage[] memory tapStages, uint votNum) = getTapsInfo();
 		uint rmNum;
@@ -375,36 +453,60 @@ contract Daico is IDaico {
 		newRoadmapProposed = true;
 	}
 
+	/**
+	* @param _from – start time of this time interval
+	* @param _long – duration of this time interval
+	* @return is current moment in this time interval
+	*/		
 	function at(uint _from, uint _long) public view returns(bool) {
 		return ((now >= _from + startedAt) && (now < startedAt + _from + _long));
 	}
 
-	function isQuorumReached(uint _tapNum, Voting memory _voting, uint _quorumPercent) internal view returns(bool) {
+	/**
+	* @param _tapNum – number of the tap
+	* @param _voting – current voting
+	* @param _quorumPercent – quorum percent
+	* @return is quorum reached for a given voting with given quorum percent
+	*/		
+	function _isQuorumReached(uint _tapNum, Voting memory _voting, uint _quorumPercent) internal view returns(bool) {
 		return (_voting.pro.add(_voting.versus).mul(100) >= tapAmountsSum(_tapNum).mul(_quorumPercent));
 	}
 
-	function isConsensusReached(Voting memory _voting, uint _consensusPercent) internal view returns(bool) {
+	/**
+	* @param _voting – current voting
+	* @param _consensusPercent – consensus percent
+	* @return is consensus reached for a given voting with given consensus percent
+	*/		
+	function _isConsensusReached(Voting memory _voting, uint _consensusPercent) internal view returns(bool) {
 		return (_voting.pro.mul(100 - _consensusPercent) >= _voting.versus.mul(_consensusPercent));
 	}
 
-	function isDeclined(Voting memory _voting, uint _declinePercent) internal view returns(bool) {
+	/**
+	* @param _voting – current voting
+	* @param _declinePercent – decline percent
+	* @return is this voting declined with given decline percent
+	*/	
+	function _isDeclined(Voting memory _voting, uint _declinePercent) internal view returns(bool) {
 		return (_voting.versus.mul(100 - _declinePercent) >= _voting.pro.mul(_declinePercent));
 	}
 
-	function getVoting(uint _tapNum, uint _votNum) internal view returns(Voting) {
-		uint rmNum = tapToRId[_tapNum];
-		return roadmaps[rmNum].taps[_tapNum].votings[_votNum];
-	}
-
+	/**
+	* @dev
+	* @param _tapNum – number of the tap
+	* @param _votNum – number of the voting
+	* @param _isQuorumDecreased – is quorum decreased or not
+	* @return voting result vor this voting
+	*/		
 	function votingState(uint _tapNum, uint _votNum, bool _isQuorumDecreased) public view returns(VR) {
 		uint _quorumPercent = quorumPercent;
 		if(_isQuorumDecreased)	_quorumPercent = quorumPercent - 20;
+	
+		uint rmNum = tapToRId[_tapNum];
+		Voting memory voting = roadmaps[rmNum].taps[_tapNum].votings[_votNum];
 		
-		Voting memory voting = getVoting(_tapNum, _votNum);
-		
-		if(!isQuorumReached(_tapNum, voting, _quorumPercent)) return VR.NoResult;
-		if(isConsensusReached(voting, consensusPercent))	return VR.Success;
-		if(isDeclined(voting, declinePercent))	return VR.Decline;
+		if(!_isQuorumReached(_tapNum, voting, _quorumPercent)) return VR.NoResult;
+		if(_isConsensusReached(voting, consensusPercent))	return VR.Success;
+		if(_isDeclined(voting, declinePercent))	return VR.Decline;
 		return VR.NoCons;
 	}
 }
